@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50">
+  <style>
+    .primary{fill:#2A5CAA}
+    .accent{fill:#dc3545}
+  </style>
+  <g>
+    <path class="primary" d="M10,25c0-8.3,6.7-15,15-15s15,6.7,15,15s-6.7,15-15,15S10,33.3,10,25z"/>
+    <path class="accent" d="M25,15c-2.8,0-5,2.2-5,5c0,5,5,8,5,8s5-3,5-8C30,17.2,27.8,15,25,15z" fill="#fff"/>
+    <text x="50" y="32" font-family="Arial" font-weight="bold" font-size="18" class="primary">DonateHub</text>
+  </g>
+</svg> 

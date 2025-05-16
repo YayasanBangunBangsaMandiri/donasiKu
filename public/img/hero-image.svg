@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <style>
+    .st0{fill:#ffffff}
+    .st1{fill:#e9ecef}
+    .st2{fill:#dee2e6}
+    .st3{fill:#2A5CAA}
+    .st4{fill:#dc3545}
+    .st5{fill:#ffc107}
+    .st6{fill:#28a745}
+    .st7{fill:#6c757d}
+  </style>
+  <g id="BACKGROUND">
+    <path class="st1" d="M0,0h800v600H0V0z"/>
+  </g>
+  <g id="OBJECTS">
+    <!-- Building -->
+    <rect x="100" y="200" width="300" height="300" rx="10" class="st0"/>
+    <rect x="150" y="250" width="80" height="80" rx="5" class="st2"/>
+    <rect x="270" y="250" width="80" height="80" rx="5" class="st2"/>
+    <rect x="150" y="350" width="80" height="80" rx="5" class="st2"/>
+    <rect x="270" y="350" width="80" height="80" rx="5" class="st2"/>
+    <rect x="180" y="450" width="140" height="50" rx="5" class="st3"/>
+    
+    <!-- People -->
+    <circle cx="500" cy="350" r="50" class="st0"/>
+    <rect x="475" y="400" width="50" height="100" rx="10" class="st3"/>
+    <rect x="460" y="400" width="15" height="60" rx="5" class="st0"/>
+    <rect x="525" y="400" width="15" height="60" rx="5" class="st0"/>
+    
+    <circle cx="600" cy="370" r="40" class="st0"/>
+    <rect x="580" y="410" width="40" height="90" rx="10" class="st4"/>
+    <rect x="570" y="410" width="10" height="50" rx="5" class="st0"/>
+    <rect x="620" y="410" width="10" height="50" rx="5" class="st0"/>
+    
+    <circle cx="400" cy="380" r="35" class="st0"/>
+    <rect x="385" y="415" width="30" height="85" rx="10" class="st6"/>
+    <rect x="375" y="415" width="10" height="45" rx="5" class="st0"/>
+    <rect x="415" y="415" width="10" height="45" rx="5" class="st0"/>
+    
+    <!-- Heart Symbol -->
+    <path class="st4" d="M550,250c-20,0-37,17-37,37c0,37,37,63,37,63s37-26,37-63C587,267,570,250,550,250z"/>
+    
+    <!-- Donation Box -->
+    <rect x="650" y="400" width="80" height="100" rx="10" class="st5"/>
+    <rect x="670" y="380" width="40" height="20" rx="5" class="st5"/>
+    <rect x="660" y="420" width="60" height="10" rx="5" class="st0"/>
+    <rect x="660" y="440" width="60" height="10" rx="5" class="st0"/>
+    <rect x="660" y="460" width="60" height="10" rx="5" class="st0"/>
+    
+    <!-- Clouds -->
+    <circle cx="150" cy="100" r="30" class="st0"/>
+    <circle cx="180" cy="90" r="25" class="st0"/>
+    <circle cx="210" cy="100" r="30" class="st0"/>
+    
+    <circle cx="550" cy="150" r="25" class="st0"/>
+    <circle cx="580" cy="140" r="20" class="st0"/>
+    <circle cx="610" cy="150" r="25" class="st0"/>
+    
+    <!-- Sun -->
+    <circle cx="700" cy="100" r="50" class="st5"/>
+    
+    <!-- Text Bubble -->
+    <path class="st0" d="M450,200c0,11-9,20-20,20h-60l-20,20v-20h-20c-11,0-20-9-20-20v-60c0-11,9-20,20-20h100c11,0,20,9,20,20V200z"/>
+    <path class="st3" d="M330,160h100" style="stroke:#2A5CAA;stroke-width:5;fill:none"/>
+    <path class="st3" d="M330,180h60" style="stroke:#2A5CAA;stroke-width:5;fill:none"/>
+  </g>
+</svg> 

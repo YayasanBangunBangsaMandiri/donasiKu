@@ -1,0 +1,35 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /donasiKu/
+    
+    # Jika file atau direktori tidak ada, lanjutkan ke aturan berikutnya
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Rewrite semua permintaan ke index.php?url=requested_path
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>
+
+# Keamanan
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Mencegah akses ke file sensitif
+<FilesMatch "\.(env|log|yaml|ini|json|lock|gitignore)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# PHP settings
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log logs/php_error.log
+    php_value upload_max_filesize 10M
+    php_value post_max_size 20M
+    php_value memory_limit 128M
+</IfModule> 
