@@ -4,6 +4,10 @@ Options -Indexes
     RewriteEngine On
     RewriteBase /donasiKu/
     
+    # Enable debugging parameter
+    RewriteCond %{QUERY_STRING} debug=1
+    RewriteRule ^(.*)$ $1 [QSA,L]
+    
     # Jika file atau direktori tidak ada, lanjutkan ke aturan berikutnya
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

@@ -10,6 +10,12 @@ session_start();
 // Load autoloader dari Composer
 require_once __DIR__ . '/vendor/autoload.php';
 
+// Pastikan config dimuat
+if (!defined('BASE_URL')) {
+    require_once __DIR__ . '/config/config.php';
+    require_once __DIR__ . '/config/database.php';
+}
+
 // Parse URL
 $url = isset($_GET['url']) ? $_GET['url'] : '';
 $url = rtrim($url, '/');
@@ -25,6 +31,19 @@ $method = isset($url[1]) ? $url[1] : 'index';
 
 // Parameter
 $params = array_slice($url, 2);
+
+// Debug info
+if (isset($_GET['debug'])) {
+    echo "<pre>";
+    echo "URL: " . print_r($url, true) . "\n";
+    echo "Controller: $controllerName\n";
+    echo "Method: $method\n";
+    echo "Params: " . print_r($params, true) . "\n";
+    echo "Controller file: $controllerFile\n";
+    echo "Exists: " . (file_exists($controllerFile) ? 'Yes' : 'No') . "\n";
+    echo "</pre>";
+    exit;
+}
 
 // Periksa apakah file controller ada
 if (!file_exists($controllerFile)) {

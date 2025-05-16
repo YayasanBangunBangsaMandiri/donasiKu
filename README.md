@@ -19,6 +19,7 @@ DonasiKu adalah platform donasi online untuk mengelola kampanye penggalangan dan
 - Web server (Apache atau Nginx)
 - Composer untuk manajemen dependensi
 - Akun Midtrans (Sandbox atau Production)
+- Ekstensi PHP: pdo_mysql atau mysqli
 
 ## Instalasi
 
@@ -57,6 +58,52 @@ setup.bat
 ```bash
 php -S localhost:8888
 ```
+
+## Mengatasi Masalah "could not find driver"
+
+Jika Anda mengalami error "Koneksi database gagal: could not find driver", ini menunjukkan bahwa ekstensi PHP PDO_MySQL belum diaktifkan. Ikuti langkah-langkah berikut:
+
+1. **Aktifkan ekstensi PDO_MySQL**:
+   - Buka file php.ini Anda (lokasi dapat ditemukan dengan menjalankan `php -i | findstr php.ini`)
+   - Cari dan hapus tanda komentar (;) di depan baris:
+     ```
+     ;extension=pdo_mysql
+     ;extension=mysqli
+     ```
+   - Menjadi:
+     ```
+     extension=pdo_mysql
+     extension=mysqli
+     ```
+   - Simpan file dan restart server web Anda
+
+2. **Gunakan XAMPP terbaru**:
+   - XAMPP sudah menyertakan ekstensi PDO_MySQL yang diaktifkan secara default
+   - Download dari [website resmi XAMPP](https://www.apachefriends.org/)
+
+3. **Gunakan file php.ini alternatif**:
+   - Salin file php.ini dari instalasi XAMPP ke direktori C:\eRaporSMK\php\ atau
+   - Buat file php.ini baru di direktori proyek dengan isi:
+     ```
+     extension=pdo_mysql
+     extension=mysqli
+     ```
+   - Jalankan dengan perintah: `php -c php.ini -S localhost:8888`
+
+4. **Untuk Instalasi PHP dengan Path Non-Standar (seperti eRaporSMK)**:
+   - Buat file php.ini di direktori proyek dengan isi berikut:
+     ```
+     [PHP]
+     extension_dir = "C:\path\ke\direktori\ext"
+     extension=C:\path\ke\direktori\ext\php_pdo_mysql.dll
+     extension=C:\path\ke\direktori\ext\php_mysqli.dll
+     ```
+   - Pastikan path mengarah ke direktori ekstensi PHP yang benar
+   - Gunakan file batch `jalankan-server.bat` yang disediakan untuk menjalankan server
+
+5. **Verifikasi Ekstensi Terinstall**:
+   - Jalankan file `cek-php-ext.php` dengan perintah: `php -c php.ini cek-php-ext.php`
+   - Pastikan ekstensi PDO, PDO_MySQL, MySQLi, dan MySQLnd tersedia
 
 ## Akses Login
 
