@@ -4,7 +4,7 @@ namespace App\Controllers;
 use App\Models\User;
 
 /**
- * Controller untuk mengelola autentikasi
+ * Controller untuk autentikasi
  */
 class AuthController extends Controller {
     private $userModel;
@@ -15,19 +15,19 @@ class AuthController extends Controller {
     }
     
     /**
-     * Menampilkan form login
+     * Menampilkan halaman login
      * 
      * @return void
      */
     public function login() {
-        // Jika sudah login, redirect ke halaman dashboard
-        if (isset($_SESSION['user_id'])) {
-            $this->redirect($_SESSION['role'] === 'admin' ? 'admin/dashboard' : 'user/dashboard');
+        // Jika user sudah login, redirect ke dashboard
+        if (isset($_SESSION['user'])) {
+            $this->redirect($_SESSION['user']['role'] === 'admin' ? 'admin/dashboard' : 'user/dashboard');
             return;
         }
         
         $this->view('auth/login', [
-            'title' => 'Login'
+            'title' => 'Login - ' . APP_NAME
         ]);
     }
     
@@ -38,212 +38,179 @@ class AuthController extends Controller {
      */
     public function doLogin() {
         // Validasi input
-        $rules = [
+        $errors = $this->validate($_POST, [
             'email' => 'required|email',
             'password' => 'required'
-        ];
-        
-        $errors = $this->validate($_POST, $rules);
+        ]);
         
         if (!empty($errors)) {
             $this->setFlash('errors', $errors);
-            $this->setFlash('old', $_POST);
-            $this->redirect('auth/login');
+            $this->setFlash('old', ['email' => $_POST['email']]);
+            $this->redirect('login');
             return;
         }
         
-        // Cek kredensial
+        // Cek user di database
         $user = $this->userModel->authenticate($_POST['email'], $_POST['password']);
         
+        // Jika user tidak ditemukan atau password salah
         if (!$user) {
             $this->setFlash('error', 'Email atau password salah');
-            $this->setFlash('old', $_POST);
-            $this->redirect('auth/login');
+            $this->setFlash('old', ['email' => $_POST['email']]);
+            $this->redirect('login');
             return;
         }
         
-        // Cek apakah 2FA diaktifkan
-        if ($user['two_factor_enabled']) {
-            // Simpan data user sementara untuk verifikasi 2FA
-            $_SESSION['temp_user'] = $user;
-            $this->redirect('auth/verify-2fa');
+        // Jika user tidak aktif
+        if ($user['status'] !== 'active') {
+            $this->setFlash('error', 'Akun Anda tidak aktif. Silakan hubungi admin.');
+            $this->redirect('login');
             return;
         }
         
-        // Set session
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['name'] = $user['name'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['role'] = $user['role'];
-        
-        // Set remember token jika "ingat saya" dicentang
-        if (isset($_POST['remember']) && $_POST['remember'] === '1') {
-            $token = bin2hex(random_bytes(32));
-            $this->userModel->update($user['id'], [
-                'remember_token' => $token
-            ]);
-            
-            // Set cookie untuk 30 hari
-            setcookie('remember_token', $token, time() + (86400 * 30), '/');
-        }
-        
-        // Redirect ke halaman dashboard sesuai role
-        $this->redirect($user['role'] === 'admin' ? 'admin/dashboard' : 'user/dashboard');
-    }
-    
-    /**
-     * Menampilkan form verifikasi 2FA
-     * 
-     * @return void
-     */
-    public function verify2FA() {
-        // Cek apakah ada data user sementara
-        if (!isset($_SESSION['temp_user'])) {
-            $this->redirect('auth/login');
+        // Jika email belum diverifikasi
+        if (!$user['email_verified_at'] && $user['role'] !== 'admin') {
+            $this->setFlash('error', 'Email Anda belum diverifikasi. Silakan cek email Anda untuk verifikasi.');
+            $this->redirect('login');
             return;
         }
         
-        $this->view('auth/verify-2fa', [
-            'title' => 'Verifikasi Autentikasi Dua Faktor'
+        // Jika 2FA diaktifkan dan user bukan admin
+        if (ENABLE_2FA && isset($user['two_factor_enabled']) && $user['two_factor_enabled'] && $user['role'] !== 'admin') {
+            // Simpan user_id di session untuk verifikasi 2FA
+            $_SESSION['temp_user_id'] = $user['id'];
+            $this->redirect('verify-2fa');
+            return;
+        }
+        
+        // Simpan data user di session (kecuali password)
+        unset($user['password']);
+        $_SESSION['user'] = $user;
+        
+        // Update last login
+        $this->userModel->update($user['id'], [
+            'updated_at' => date('Y-m-d H:i:s')
         ]);
-    }
-    
-    /**
-     * Memproses verifikasi 2FA
-     * 
-     * @return void
-     */
-    public function doVerify2FA() {
-        // Cek apakah ada data user sementara
-        if (!isset($_SESSION['temp_user'])) {
-            $this->redirect('auth/login');
-            return;
-        }
         
-        // Validasi input
-        $rules = [
-            'code' => 'required|min:6|max:6'
-        ];
-        
-        $errors = $this->validate($_POST, $rules);
-        
-        if (!empty($errors)) {
-            $this->setFlash('errors', $errors);
-            $this->redirect('auth/verify-2fa');
-            return;
-        }
-        
-        $user = $_SESSION['temp_user'];
-        
-        // Verifikasi kode 2FA
-        require_once __DIR__ . '/../../vendor/autoload.php';
-        $ga = new \PHPGangsta_GoogleAuthenticator();
-        $checkResult = $ga->verifyCode($user['two_factor_secret'], $_POST['code'], 2);
-        
-        if (!$checkResult) {
-            $this->setFlash('error', 'Kode verifikasi tidak valid');
-            $this->redirect('auth/verify-2fa');
-            return;
-        }
-        
-        // Hapus data user sementara
-        unset($_SESSION['temp_user']);
-        
-        // Set session
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['name'] = $user['name'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['role'] = $user['role'];
-        
-        // Redirect ke halaman dashboard sesuai role
+        // Redirect ke dashboard sesuai role
         $this->redirect($user['role'] === 'admin' ? 'admin/dashboard' : 'user/dashboard');
     }
     
     /**
-     * Menampilkan form registrasi
+     * Menampilkan halaman register
      * 
      * @return void
      */
     public function register() {
-        // Jika sudah login, redirect ke halaman dashboard
-        if (isset($_SESSION['user_id'])) {
-            $this->redirect($_SESSION['role'] === 'admin' ? 'admin/dashboard' : 'user/dashboard');
+        // Jika user sudah login, redirect ke dashboard
+        if (isset($_SESSION['user'])) {
+            $this->redirect($_SESSION['user']['role'] === 'admin' ? 'admin/dashboard' : 'user/dashboard');
             return;
         }
         
         $this->view('auth/register', [
-            'title' => 'Registrasi'
+            'title' => 'Register - ' . APP_NAME
         ]);
     }
     
     /**
-     * Memproses form registrasi
+     * Memproses form register
      * 
      * @return void
      */
     public function doRegister() {
         // Validasi input
-        $rules = [
+        $errors = $this->validate($_POST, [
             'name' => 'required|max:100',
             'email' => 'required|email',
             'password' => 'required|min:8',
             'password_confirmation' => 'required'
-        ];
+        ]);
         
-        $errors = $this->validate($_POST, $rules);
-        
-        // Validasi tambahan
+        // Validasi password confirmation
         if ($_POST['password'] !== $_POST['password_confirmation']) {
             $errors['password_confirmation'][] = 'Konfirmasi password tidak sesuai';
         }
         
-        if (!empty($errors)) {
-            $this->setFlash('errors', $errors);
-            $this->setFlash('old', $_POST);
-            $this->redirect('auth/register');
-            return;
-        }
-        
-        // Cek apakah email sudah digunakan
+        // Cek apakah email sudah terdaftar
         $existingUser = $this->userModel->findBy('email', $_POST['email']);
         
         if ($existingUser) {
-            $this->setFlash('error', 'Email sudah digunakan');
-            $this->setFlash('old', $_POST);
-            $this->redirect('auth/register');
+            $errors['email'][] = 'Email sudah terdaftar';
+        }
+        
+        if (!empty($errors)) {
+            $this->setFlash('errors', $errors);
+            $this->setFlash('old', [
+                'name' => $_POST['name'],
+                'email' => $_POST['email']
+            ]);
+            $this->redirect('register');
             return;
         }
         
-        // Siapkan data user
-        $data = [
+        // Generate verification token
+        $verificationToken = bin2hex(random_bytes(32));
+        
+        // Buat user baru
+        $userData = [
             'name' => $_POST['name'],
             'email' => $_POST['email'],
             'password' => $_POST['password'],
-            'role' => 'user'
+            'verification_token' => $verificationToken,
+            'created_at' => date('Y-m-d H:i:s')
         ];
         
-        // Buat user baru
-        $userId = $this->userModel->register($data);
+        $userId = $this->userModel->register($userData);
         
-        if (!$userId) {
-            $this->setFlash('error', 'Gagal melakukan registrasi');
-            $this->setFlash('old', $_POST);
-            $this->redirect('auth/register');
-            return;
-        }
+        // Kirim email verifikasi (implementasi sebenarnya akan menggunakan library email)
+        // TODO: Implementasi pengiriman email
         
-        $this->setFlash('success', 'Registrasi berhasil. Silakan login.');
-        $this->redirect('auth/login');
+        // Set flash message sukses
+        $this->setFlash('success', 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi.');
+        
+        // Redirect ke halaman login
+        $this->redirect('login');
     }
     
     /**
-     * Menampilkan form lupa password
+     * Verifikasi email
+     * 
+     * @param string $token Token verifikasi
+     * @return void
+     */
+    public function verifyEmail($token) {
+        // Cek token di database
+        $user = $this->userModel->findBy('verification_token', $token);
+        
+        if (!$user) {
+            $this->setFlash('error', 'Token verifikasi tidak valid');
+            $this->redirect('login');
+            return;
+        }
+        
+        // Update status email verified
+        $this->userModel->update($user['id'], [
+            'email_verified_at' => date('Y-m-d H:i:s'),
+            'verification_token' => null,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+        
+        // Set flash message sukses
+        $this->setFlash('success', 'Email berhasil diverifikasi! Silakan login.');
+        
+        // Redirect ke halaman login
+        $this->redirect('login');
+    }
+    
+    /**
+     * Menampilkan halaman lupa password
      * 
      * @return void
      */
     public function forgotPassword() {
         $this->view('auth/forgot-password', [
-            'title' => 'Lupa Password'
+            'title' => 'Lupa Password - ' . APP_NAME
         ]);
     }
     
@@ -254,73 +221,64 @@ class AuthController extends Controller {
      */
     public function doForgotPassword() {
         // Validasi input
-        $rules = [
+        $errors = $this->validate($_POST, [
             'email' => 'required|email'
-        ];
-        
-        $errors = $this->validate($_POST, $rules);
+        ]);
         
         if (!empty($errors)) {
             $this->setFlash('errors', $errors);
-            $this->setFlash('old', $_POST);
-            $this->redirect('auth/forgot-password');
+            $this->setFlash('old', ['email' => $_POST['email']]);
+            $this->redirect('forgot-password');
             return;
         }
         
-        // Cek apakah email terdaftar
+        // Cek user di database
         $user = $this->userModel->findBy('email', $_POST['email']);
         
-        if (!$user) {
-            $this->setFlash('error', 'Email tidak terdaftar');
-            $this->setFlash('old', $_POST);
-            $this->redirect('auth/forgot-password');
+        if (!$user || $user['status'] !== 'active') {
+            // Untuk keamanan, tetap tampilkan pesan sukses meskipun email tidak ditemukan
+            $this->setFlash('success', 'Jika email terdaftar, Anda akan menerima instruksi reset password.');
+            $this->redirect('forgot-password');
             return;
         }
         
-        // Buat token reset password
-        $token = $this->userModel->createPasswordResetToken($_POST['email']);
+        // Generate reset token
+        $resetToken = bin2hex(random_bytes(32));
         
-        if (!$token) {
-            $this->setFlash('error', 'Gagal membuat token reset password');
-            $this->redirect('auth/forgot-password');
-            return;
-        }
+        // Simpan token ke database
+        $this->userModel->update($user['id'], [
+            'remember_token' => $resetToken,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
         
         // Kirim email reset password (implementasi sebenarnya akan menggunakan library email)
-        $resetUrl = BASE_URL . '/auth/reset-password?email=' . urlencode($_POST['email']) . '&token=' . $token;
-        
         // TODO: Implementasi pengiriman email
         
-        $this->setFlash('success', 'Link reset password telah dikirim ke email Anda');
-        $this->redirect('auth/forgot-password');
+        // Set flash message sukses
+        $this->setFlash('success', 'Instruksi reset password telah dikirim ke email Anda.');
+        
+        // Redirect kembali ke halaman lupa password
+        $this->redirect('forgot-password');
     }
     
     /**
-     * Menampilkan form reset password
+     * Menampilkan halaman reset password
      * 
+     * @param string $token Token reset password
      * @return void
      */
-    public function resetPassword() {
-        // Validasi token dan email
-        $email = $_GET['email'] ?? '';
-        $token = $_GET['token'] ?? '';
+    public function resetPassword($token) {
+        // Cek token di database
+        $user = $this->userModel->findBy('remember_token', $token);
         
-        if (empty($email) || empty($token)) {
-            $this->redirect('auth/login');
-            return;
-        }
-        
-        $isValid = $this->userModel->validatePasswordResetToken($token, $email);
-        
-        if (!$isValid) {
-            $this->setFlash('error', 'Token reset password tidak valid atau sudah kadaluarsa');
-            $this->redirect('auth/login');
+        if (!$user) {
+            $this->setFlash('error', 'Token reset password tidak valid atau sudah kadaluarsa.');
+            $this->redirect('login');
             return;
         }
         
         $this->view('auth/reset-password', [
-            'title' => 'Reset Password',
-            'email' => $email,
+            'title' => 'Reset Password - ' . APP_NAME,
             'token' => $token
         ]);
     }
@@ -332,37 +290,44 @@ class AuthController extends Controller {
      */
     public function doResetPassword() {
         // Validasi input
-        $rules = [
-            'email' => 'required|email',
+        $errors = $this->validate($_POST, [
             'token' => 'required',
             'password' => 'required|min:8',
             'password_confirmation' => 'required'
-        ];
+        ]);
         
-        $errors = $this->validate($_POST, $rules);
-        
-        // Validasi tambahan
+        // Validasi password confirmation
         if ($_POST['password'] !== $_POST['password_confirmation']) {
             $errors['password_confirmation'][] = 'Konfirmasi password tidak sesuai';
         }
         
         if (!empty($errors)) {
             $this->setFlash('errors', $errors);
-            $this->redirect('auth/reset-password?email=' . urlencode($_POST['email']) . '&token=' . $_POST['token']);
+            $this->redirect('reset-password/' . $_POST['token']);
             return;
         }
         
-        // Reset password
-        $result = $this->userModel->resetPassword($_POST['token'], $_POST['email'], $_POST['password']);
+        // Cek token di database
+        $user = $this->userModel->findBy('remember_token', $_POST['token']);
         
-        if (!$result) {
-            $this->setFlash('error', 'Gagal reset password');
-            $this->redirect('auth/reset-password?email=' . urlencode($_POST['email']) . '&token=' . $_POST['token']);
+        if (!$user) {
+            $this->setFlash('error', 'Token reset password tidak valid atau sudah kadaluarsa.');
+            $this->redirect('login');
             return;
         }
         
-        $this->setFlash('success', 'Password berhasil direset. Silakan login dengan password baru.');
-        $this->redirect('auth/login');
+        // Update password dan hapus token
+        $this->userModel->update($user['id'], [
+            'password' => password_hash($_POST['password'], PASSWORD_DEFAULT),
+            'remember_token' => null,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+        
+        // Set flash message sukses
+        $this->setFlash('success', 'Password berhasil diubah! Silakan login dengan password baru Anda.');
+        
+        // Redirect ke halaman login
+        $this->redirect('login');
     }
     
     /**
@@ -371,15 +336,11 @@ class AuthController extends Controller {
      * @return void
      */
     public function logout() {
-        // Hapus cookie remember token jika ada
-        if (isset($_COOKIE['remember_token'])) {
-            setcookie('remember_token', '', time() - 3600, '/');
-        }
-        
         // Hapus session
-        session_unset();
+        unset($_SESSION['user']);
         session_destroy();
         
-        $this->redirect('home');
+        // Redirect ke halaman utama
+        $this->redirect('');
     }
 } 

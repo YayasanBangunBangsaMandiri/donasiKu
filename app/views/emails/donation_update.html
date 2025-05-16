@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Status Donasi</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #ffffff;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+        }
+        h1 {
+            color: #3498db;
+            margin-top: 0;
+        }
+        .details {
+            margin: 25px 0;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .details table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .details table td:first-child {
+            font-weight: bold;
+            width: 140px;
+        }
+        .details table tr:last-child td {
+            border-bottom: none;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .status-icon {
+            text-align: center;
+            font-size: 48px;
+            margin: 20px 0;
+        }
+        .status-info {
+            margin: 25px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .status-success {
+            border: 1px solid #2ecc71;
+            background-color: #eafaf1;
+        }
+        .status-failed {
+            border: 1px solid #e74c3c;
+            background-color: #fdedeb;
+        }
+        .status-expired {
+            border: 1px solid #95a5a6;
+            background-color: #f8f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>{{app_name}}</h2>
+        </div>
+        
+        <div class="content">
+            <div class="status-icon">
+                {{#if status_success}}
+                <span style="color: #2ecc71;">✓</span>
+                {{else if status_failed}}
+                <span style="color: #e74c3c;">✗</span>
+                {{else}}
+                <span style="color: #95a5a6;">ℹ</span>
+                {{/if}}
+            </div>
+            
+            <h1>Update Status Donasi</h1>
+            
+            <p>Halo <strong>{{donation.name}}</strong>,</p>
+            
+            <p>Status donasi Anda untuk kampanye <strong>{{campaign.title}}</strong> telah diperbarui.</p>
+            
+            <div class="details">
+                <table>
+                    <tr>
+                        <td>Kampanye</td>
+                        <td>{{campaign.title}}</td>
+                    </tr>
+                    <tr>
+                        <td>Tanggal</td>
+                        <td>{{date}}</td>
+                    </tr>
+                    <tr>
+                        <td>Jumlah Donasi</td>
+                        <td>{{amount}}</td>
+                    </tr>
+                    <tr>
+                        <td>Metode Pembayaran</td>
+                        <td>{{payment_method}}</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td><strong>{{payment_status}}</strong></td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div id="status-message" class="status-info {{status_class}}">
+                <h3 style="margin-top: 0;">Informasi Status:</h3>
+                <p id="status-text">
+                    {{#if status_success}}
+                    Donasi Anda telah berhasil diproses. Terima kasih atas dukungan dan kepedulian Anda!
+                    {{else if status_failed}}
+                    Sayangnya donasi Anda tidak dapat diproses. Mohon periksa metode pembayaran Anda atau coba lagi nanti.
+                    {{else if status_expired}}
+                    Donasi Anda telah kedaluwarsa karena tidak ada pembayaran yang diterima dalam jangka waktu yang ditentukan.
+                    {{else}}
+                    Status donasi Anda telah diperbarui menjadi {{payment_status}}.
+                    {{/if}}
+                </p>
+            </div>
+            
+            <p>Jika Anda memiliki pertanyaan, silakan hubungi tim kami melalui kontak yang tersedia di website kami.</p>
+            
+            <p>Salam hangat,<br>
+            Tim {{app_name}}</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{app_name}} - Platform Donasi Online</p>
+            <p>Email ini dikirim secara otomatis, mohon jangan membalas ke alamat email ini.</p>
+        </div>
+    </div>
+
+    <script>
+        // Script sederhana untuk menampilkan pesan status yang sesuai
+        // Karena email HTML tidak bisa menjalankan script, ini hanya untuk placeholder template
+        // Teks sebenarnya akan diganti dengan fungsi PHP sebelum email dikirim
+        document.addEventListener('DOMContentLoaded', function() {
+            var status = "{{payment_status}}";
+            var statusText = document.getElementById('status-text');
+            var statusInfo = document.getElementById('status-message');
+            
+            if (status.toLowerCase() === 'berhasil' || status.toLowerCase() === 'success') {
+                statusInfo.className = 'status-info status-success';
+                statusText.innerHTML = 'Donasi Anda telah berhasil diproses. Terima kasih atas dukungan dan kepedulian Anda!';
+            } else if (status.toLowerCase() === 'gagal' || status.toLowerCase() === 'failed') {
+                statusInfo.className = 'status-info status-failed';
+                statusText.innerHTML = 'Sayangnya donasi Anda tidak dapat diproses. Mohon periksa metode pembayaran Anda atau coba lagi nanti.';
+            } else if (status.toLowerCase() === 'kedaluwarsa' || status.toLowerCase() === 'expired') {
+                statusInfo.className = 'status-info status-expired';
+                statusText.innerHTML = 'Donasi Anda telah kedaluwarsa karena tidak ada pembayaran yang diterima dalam jangka waktu yang ditentukan.';
+            } else {
+                statusInfo.className = 'status-info';
+                statusText.innerHTML = 'Status donasi Anda telah diperbarui menjadi ' + status;
+            }
+        });
+    </script>
+</body>
+</html>

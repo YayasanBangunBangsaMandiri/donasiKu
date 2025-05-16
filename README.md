@@ -1,116 +1,208 @@
-# DonateHub - Platform Donasi dengan Integrasi Midtrans
+# DonasiKu - Platform Donasi Online
 
-Platform donasi online yang memungkinkan pengguna untuk membuat kampanye donasi dan menerima donasi melalui berbagai metode pembayaran dengan integrasi Midtrans.
+DonasiKu adalah platform donasi online untuk mengelola kampanye penggalangan dana dengan integrasi pembayaran Midtrans.
 
 ## Fitur Utama
 
-### Untuk Donatur
-- Donasi dengan jumlah preset atau custom
-- Pembayaran melalui Midtrans (Virtual Account, E-wallet, Kartu Kredit)
-- Panduan pembayaran interaktif untuk setiap metode pembayaran
-- Notifikasi pembayaran real-time
-- Riwayat donasi untuk pengguna yang terdaftar
-
-### Untuk Admin
-- Dashboard admin dengan statistik donasi
-- Manajemen kampanye (tambah, edit, hapus, duplikat)
-- Manajemen donasi (lihat, edit, batalkan)
-- Laporan donasi (export PDF/Excel)
-- Pengaturan situs dan konfigurasi donasi
-
-## Teknologi
-
-- PHP (MVC Pattern)
-- MySQL
-- Midtrans Payment Gateway
-- Bootstrap 5
-- JavaScript / jQuery
-- Chart.js untuk visualisasi data
+- Manajemen kampanye donasi
+- Integrasi pembayaran Midtrans (Transfer Bank, E-Wallet, QRIS)
+- Preset dan custom donation amounts
+- Panduan pembayaran interaktif
+- Notifikasi real-time untuk donasi
+- Dashboard admin untuk manajemen kampanye dan transaksi
+- Keamanan dengan 2FA untuk admin
 
 ## Persyaratan Sistem
 
-- PHP 7.4 atau lebih baru
-- MySQL 5.7 atau lebih baru
-- Ekstensi PHP: PDO, cURL, JSON, OpenSSL
-- Web server (Apache/Nginx)
-- Akun Midtrans (Sandbox untuk pengembangan)
+- PHP 7.4 atau lebih tinggi
+- MySQL 5.7 atau lebih tinggi
+- Web server (Apache atau Nginx)
+- Composer untuk manajemen dependensi
+- Akun Midtrans (Sandbox atau Production)
 
 ## Instalasi
 
-1. Clone repositori ini:
-   ```
-   git clone https://github.com/username/donatehub.git
-   ```
+1. **Clone repository**
 
-2. Buat database MySQL:
-   ```
-   mysql -u root -p < database/schema.sql
-   ```
+```bash
+git clone https://github.com/username/donasiKu.git
+cd donasiKu
+```
 
-3. Konfigurasi aplikasi:
-   - Salin `config/config.example.php` ke `config/config.php`
-   - Edit `config/config.php` dan sesuaikan konfigurasi database dan Midtrans
+2. **Install dependensi dengan Composer**
 
-4. Install dependensi Midtrans:
-   ```
-   composer require midtrans/midtrans-php
-   ```
+```bash
+composer install
+```
 
-5. Pastikan direktori `public/uploads` dapat ditulis oleh web server:
-   ```
-   chmod -R 755 public/uploads
-   ```
+3. **Setup database**
 
-6. Akses aplikasi melalui web browser:
-   ```
-   http://localhost/donatehub
-   ```
+- Buat database MySQL baru
+- Jalankan file setup.bat di folder database untuk membuat struktur database
+- Atau import manual file schema.sql ke database Anda
+
+```bash
+cd database
+setup.bat
+```
+
+4. **Konfigurasi**
+
+- Edit file `config/config.php` sesuai dengan lingkungan Anda
+- Ubah konfigurasi database di `config/database.php`
+- Sesuaikan konfigurasi Midtrans dengan sandbox key atau production key Anda
+
+5. **Jalankan aplikasi**
+
+```bash
+php -S localhost:8888
+```
+
+## Akses Login
+
+### Akun Admin
+- URL: http://localhost:8888/donasiKu/auth/login
+- Email default: admin@donasiku.com
+- Password default: admin123
+
+### Akun Pengguna
+- URL: http://localhost:8888/donasiKu/auth/login
+- Pendaftaran baru: http://localhost:8888/donasiKu/auth/register
+
+### Keamanan Akun
+- Verifikasi email diperlukan untuk akun baru
+- Two-Factor Authentication (2FA) tersedia untuk akun admin
+- Fitur reset password tersedia melalui email
+
+## Tata Cara Donasi
+
+### Membuat Donasi Tanpa Login
+1. Buka halaman utama: http://localhost:8888/donasiKu
+2. Pilih kampanye yang ingin didonasikan
+3. Tentukan jumlah donasi (preset atau custom)
+4. Isi data diri (nama, email, nomor telepon)
+5. Pilih metode pembayaran melalui Midtrans
+6. Ikuti petunjuk pembayaran sesuai metode yang dipilih
+7. Setelah pembayaran berhasil, status donasi akan diperbarui otomatis
+
+### Membuat Donasi dengan Login
+1. Login ke akun Anda
+2. Pilih kampanye dari beranda atau menu kampanye
+3. Tentukan jumlah donasi
+4. Data diri akan terisi otomatis dari profil
+5. Pilih metode pembayaran
+6. Selesaikan pembayaran
+7. Pantau status donasi di dashboard Anda
+
+### Melacak Donasi
+1. Login ke akun Anda
+2. Akses menu "Donasi Saya"
+3. Lihat semua riwayat donasi dan statusnya
+4. Unduh bukti donasi untuk keperluan pajak atau dokumentasi
+
+## Tutorial Dashboard Admin
+
+### Akses Dashboard Admin
+1. Login menggunakan akun admin: http://localhost:8888/donasiKu/auth/login
+2. Dashboard admin dapat diakses di: http://localhost:8888/donasiKu/admin/dashboard
+
+### Manajemen Kampanye
+1. Akses menu "Kampanye" di sidebar admin
+2. Lihat semua kampanye dengan fitur pencarian dan filter
+3. Buat kampanye baru:
+   - Klik tombol "Tambah Kampanye"
+   - Isi formulir (judul, deskripsi, target donasi, gambar)
+   - Upload foto/gambar kampanye
+   - Tentukan durasi kampanye
+   - Pilih kategori dan tag
+   - Klik "Simpan" untuk membuat kampanye
+
+4. Edit kampanye:
+   - Klik tombol "Edit" pada kampanye yang ingin diubah
+   - Perbarui informasi kampanye
+   - Klik "Simpan" untuk menyimpan perubahan
+
+5. Kelola status kampanye:
+   - Aktif/Nonaktifkan kampanye
+   - Arsipkan kampanye selesai
+   - Tandai kampanye sebagai pilihan/featured
+
+### Manajemen Donasi
+1. Akses menu "Donasi" di sidebar admin
+2. Lihat semua transaksi donasi dengan detail lengkap
+3. Filter donasi berdasarkan status, tanggal, atau kampanye
+4. Lihat detail donasi dengan mengklik tombol "Lihat Detail"
+5. Update status donasi secara manual jika diperlukan
+6. Ekspor data donasi ke Excel/CSV untuk laporan
+
+### Manajemen Pengguna
+1. Akses menu "Pengguna" di sidebar admin
+2. Lihat dan kelola semua akun pengguna
+3. Aktifkan/Nonaktifkan akun pengguna
+4. Reset password pengguna
+5. Tambahkan admin baru (khusus Super Admin)
+
+### Laporan dan Statistik
+1. Dashboard menampilkan ringkasan statistik
+   - Total donasi terkumpul
+   - Jumlah kampanye aktif
+   - Jumlah donatur
+   - Grafik donasi per periode
+2. Laporan terperinci tersedia di menu "Laporan"
+3. Filter laporan berdasarkan periode, kampanye, atau metode pembayaran
+4. Ekspor laporan untuk keperluan audit atau dokumentasi
 
 ## Konfigurasi Midtrans
 
-1. Daftar akun di [Midtrans](https://midtrans.com/)
-2. Dapatkan Client Key dan Server Key dari dashboard Midtrans
-3. Update konfigurasi di `config/config.php`:
-   ```php
-   define('MIDTRANS_CLIENT_KEY', 'SB-Mid-client-XXXXXXXXXXXXXXXX');
-   define('MIDTRANS_SERVER_KEY', 'SB-Mid-server-XXXXXXXXXXXXXXXX');
-   define('MIDTRANS_ENVIRONMENT', 'sandbox'); // 'sandbox' atau 'production'
-   define('MIDTRANS_MERCHANT_ID', 'GXXXXXXXX');
-   ```
+Untuk menggunakan fitur pembayaran, Anda perlu mendaftar di [Midtrans](https://midtrans.com/) dan mendapatkan API key:
 
-4. Konfigurasi webhook di dashboard Midtrans:
-   - URL: `https://yourdomain.com/donation/notification`
-   - Pilih semua jenis notifikasi
+1. Daftar dan login ke dashboard Midtrans
+2. Dapatkan Client Key dan Server Key dari menu Settings > Access Keys
+3. Update file `config/config.php` dengan key yang didapat:
 
-## Struktur Direktori
-
-```
-donatehub/
-├── app/
-│   ├── controllers/    # Controller aplikasi
-│   ├── models/         # Model data
-│   ├── views/          # Template view
-│   └── helpers/        # Helper functions
-├── config/             # File konfigurasi
-├── database/           # SQL schema dan migrations
-├── public/             # Aset publik (CSS, JS, gambar)
-│   ├── css/
-│   ├── js/
-│   ├── img/
-│   └── uploads/        # Upload file
-└── vendor/             # Dependensi pihak ketiga
+```php
+// Konfigurasi Midtrans
+define('MIDTRANS_CLIENT_KEY', 'SB-Mid-client-xxxxxxxxxxxxxxxx');  // Ganti dengan client key Midtrans
+define('MIDTRANS_SERVER_KEY', 'SB-Mid-server-xxxxxxxxxxxxxxxx');  // Ganti dengan server key Midtrans
+define('MIDTRANS_ENVIRONMENT', 'sandbox');  // 'sandbox' atau 'production'
+define('MIDTRANS_MERCHANT_ID', 'G123456789');  // Ganti dengan Merchant ID Midtrans
 ```
 
-## Akun Default
+## Penggunaan
 
-- Admin:
-  - Email: admin@donatehub.com
-  - Password: password
+### Manajemen Kampanye
+1. Login ke akun admin
+2. Akses menu Kampanye
+3. Buat kampanye baru dengan judul, deskripsi, dan target donasi
 
-## Pengembangan Lanjutan
+### Proses Donasi
+1. Pengguna memilih kampanye
+2. Pilih jumlah donasi (preset atau custom)
+3. Isi formulir data diri
+4. Pilih metode pembayaran
+5. Selesaikan pembayaran melalui Midtrans
+6. Sistem akan otomatis memperbarui status donasi setelah pembayaran berhasil
 
-Proyek ini dirancang dengan pola MVC untuk memudahkan migrasi ke Laravel di masa depan. Struktur kode dan konvensi penamaan mengikuti praktik Laravel untuk memudahkan proses migrasi.
+### Callback Midtrans
+Pastikan endpoint callback bisa diakses oleh Midtrans:
+- Notification URL: `https://your-domain.com/donation/notification`
+- Finish URL: `https://your-domain.com/donation/finish/{id}`
+- Unfinish URL: `https://your-domain.com/donation/unfinish/{id}`
+- Error URL: `https://your-domain.com/donation/error/{id}`
+
+## Struktur Database
+
+Sistem menggunakan beberapa tabel utama:
+- `users`: Menyimpan data pengguna dan admin
+- `campaigns`: Menyimpan data kampanye donasi
+- `donations`: Menyimpan transaksi donasi
+- `payment_guides`: Menyimpan panduan pembayaran
+- `payment_logs`: Menyimpan log webhook Midtrans
+
+## Kontribusi
+
+Silakan berkontribusi pada proyek ini dengan membuat pull request atau melaporkan issue.
 
 ## Lisensi
 
-Proyek ini dilisensikan di bawah [MIT License](LICENSE). 
+[MIT License](LICENSE) 

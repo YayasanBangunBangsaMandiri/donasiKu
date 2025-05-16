@@ -2,204 +2,418 @@
 namespace App\Helpers;
 
 /**
- * Helper untuk integrasi dengan Midtrans
+ * Helper untuk integrasi Midtrans
  */
 class MidtransHelper {
-    /**
-     * Inisialisasi konfigurasi Midtrans
-     * 
-     * @return void
-     */
-    public static function init() {
-        // Load Midtrans Config
+    private $snap;
+    private $apiClient;
+    private $db;
+    
+    public function __construct() {
+        require_once BASEPATH . '/vendor/autoload.php';
+        
+        // Set konfigurasi Midtrans
         \Midtrans\Config::$serverKey = MIDTRANS_SERVER_KEY;
-        \Midtrans\Config::$isProduction = (MIDTRANS_ENVIRONMENT === 'production');
-        \Midtrans\Config::$isSanitized = true;
+        \Midtrans\Config::$clientKey = MIDTRANS_CLIENT_KEY;
+        \Midtrans\Config::$isProduction = MIDTRANS_ENVIRONMENT === 'production';
         \Midtrans\Config::$is3ds = true;
-    }
-    
-    /**
-     * Membuat transaksi Snap
-     * 
-     * @param array $params Parameter untuk Snap
-     * @return array|false Data transaksi atau false jika gagal
-     */
-    public static function createTransaction($params) {
-        self::init();
+        \Midtrans\Config::$isSanitized = true;
         
-        try {
-            // Buat Snap Token
-            $snapToken = \Midtrans\Snap::getSnapToken($params);
-            
-            return [
-                'token' => $snapToken,
-                'redirect_url' => 'https://app.midtrans.com/snap/v2/vtweb/' . $snapToken,
-                'payment_type' => 'snap',
-            ];
-        } catch (\Exception $e) {
-            // Log error
-            error_log('Midtrans Error: ' . $e->getMessage());
-            return false;
-        }
+        $this->db = \Database::getInstance();
     }
     
     /**
-     * Mendapatkan status transaksi
-     * 
-     * @param string $orderId ID order
-     * @return array|false Data status transaksi atau false jika gagal
-     */
-    public static function getStatus($orderId) {
-        self::init();
-        
-        try {
-            $status = \Midtrans\Transaction::status($orderId);
-            return $status;
-        } catch (\Exception $e) {
-            // Log error
-            error_log('Midtrans Error: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Membatalkan transaksi
-     * 
-     * @param string $orderId ID order
-     * @return array|false Data hasil pembatalan atau false jika gagal
-     */
-    public static function cancelTransaction($orderId) {
-        self::init();
-        
-        try {
-            $cancel = \Midtrans\Transaction::cancel($orderId);
-            return $cancel;
-        } catch (\Exception $e) {
-            // Log error
-            error_log('Midtrans Error: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Mengembalikan dana transaksi
-     * 
-     * @param string $orderId ID order
-     * @param array $params Parameter untuk refund
-     * @return array|false Data hasil refund atau false jika gagal
-     */
-    public static function refundTransaction($orderId, $params) {
-        self::init();
-        
-        try {
-            $refund = \Midtrans\Transaction::refund($orderId, $params);
-            return $refund;
-        } catch (\Exception $e) {
-            // Log error
-            error_log('Midtrans Error: ' . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Membuat parameter untuk transaksi Midtrans
+     * Buat transaksi Midtrans untuk donasi
      * 
      * @param array $donation Data donasi
-     * @param array $campaign Data campaign
-     * @return array Parameter untuk Midtrans
+     * @param array $campaign Data kampanye
+     * @return array Response dari Midtrans
      */
-    public static function createParams($donation, $campaign) {
-        return [
-            'transaction_details' => [
-                'order_id' => $donation['transaction_id'],
-                'gross_amount' => (int) $donation['amount'],
-            ],
-            'customer_details' => [
-                'first_name' => $donation['name'],
-                'email' => $donation['email'],
-                'phone' => $donation['phone'] ?? '',
-            ],
-            'item_details' => [
-                [
-                    'id' => 'donation-' . $donation['id'],
-                    'price' => (int) $donation['amount'],
-                    'quantity' => 1,
-                    'name' => 'Donasi untuk ' . $campaign['title'],
-                ]
-            ],
-            'callbacks' => [
-                'finish' => BASE_URL . '/donation/finish/' . $donation['id'],
-                'error' => BASE_URL . '/donation/error/' . $donation['id'],
-                'pending' => BASE_URL . '/donation/pending/' . $donation['id']
-            ]
-        ];
-    }
-    
-    /**
-     * Mendapatkan panduan pembayaran berdasarkan metode pembayaran
-     * 
-     * @param string $paymentType Jenis pembayaran
-     * @return array Data panduan pembayaran
-     */
-    public static function getPaymentGuide($paymentType) {
-        $guides = [
-            'bank_transfer' => [
-                'title' => 'Panduan Transfer Bank',
-                'steps' => [
-                    'Catat nomor rekening virtual account yang diberikan',
-                    'Login ke m-banking, i-banking, atau ATM bank Anda',
-                    'Pilih menu Transfer atau Pembayaran',
-                    'Masukkan nomor virtual account sebagai tujuan transfer',
-                    'Masukkan jumlah donasi sesuai yang tertera',
-                    'Konfirmasi dan selesaikan pembayaran',
-                    'Simpan bukti pembayaran'
-                ],
-                'note' => 'Pembayaran akan diverifikasi secara otomatis dalam 5-10 menit.'
-            ],
-            'gopay' => [
-                'title' => 'Panduan Pembayaran GoPay',
-                'steps' => [
-                    'Buka aplikasi Gojek di smartphone Anda',
-                    'Scan QR code yang ditampilkan',
-                    'Periksa detail pembayaran',
-                    'Masukkan PIN GoPay Anda',
-                    'Pembayaran selesai'
-                ],
-                'note' => 'Pembayaran akan diverifikasi secara otomatis setelah pembayaran berhasil.'
-            ],
-            'shopeepay' => [
-                'title' => 'Panduan Pembayaran ShopeePay',
-                'steps' => [
-                    'Buka aplikasi Shopee di smartphone Anda',
-                    'Pilih ShopeePay',
-                    'Scan QR code yang ditampilkan',
-                    'Periksa detail pembayaran',
-                    'Konfirmasi pembayaran',
-                    'Masukkan PIN ShopeePay Anda'
-                ],
-                'note' => 'Pembayaran akan diverifikasi secara otomatis setelah pembayaran berhasil.'
-            ],
-            'credit_card' => [
-                'title' => 'Panduan Pembayaran Kartu Kredit',
-                'steps' => [
-                    'Isi detail kartu kredit Anda',
-                    'Masukkan nomor kartu, tanggal kadaluarsa, dan CVV',
-                    'Untuk keamanan, Anda akan diarahkan ke halaman 3D Secure',
-                    'Masukkan kode OTP yang dikirimkan ke nomor handphone Anda',
-                    'Pembayaran selesai setelah verifikasi berhasil'
-                ],
-                'note' => 'Pembayaran akan diverifikasi secara otomatis setelah pembayaran berhasil.'
+    public function createTransaction($donation, $campaign) {
+        // Buat order ID unik
+        $orderId = 'DON-' . time() . '-' . $donation['id'];
+        
+        // Update order ID di database
+        $this->db->query(
+            "UPDATE donations SET order_id = ? WHERE id = ?",
+            [$orderId, $donation['id']]
+        );
+        
+        // Item details untuk Midtrans
+        $itemDetails = [
+            [
+                'id' => 'DON-' . $campaign['id'],
+                'price' => $donation['amount'],
+                'quantity' => 1,
+                'name' => 'Donasi untuk ' . $campaign['title'],
             ]
         ];
         
-        return $guides[$paymentType] ?? [
-            'title' => 'Panduan Pembayaran',
-            'steps' => [
-                'Ikuti instruksi pembayaran yang diberikan',
-                'Selesaikan pembayaran sesuai dengan metode yang dipilih',
-                'Simpan bukti pembayaran'
-            ],
-            'note' => 'Pembayaran akan diverifikasi secara otomatis setelah pembayaran berhasil.'
+        // Data pelanggan
+        $customerDetails = [
+            'first_name' => $donation['name'],
+            'email' => $donation['email'],
+            'phone' => $donation['phone'] ?? '',
         ];
+        
+        // Pengaturan transaksi
+        $transactionDetails = [
+            'order_id' => $orderId,
+            'gross_amount' => $donation['amount'],
+        ];
+        
+        // Callback URL
+        $callbackUrl = [
+            'finish' => BASE_URL . '/donation/finish/' . $donation['id'],
+            'unfinish' => BASE_URL . '/donation/unfinish/' . $donation['id'],
+            'error' => BASE_URL . '/donation/error/' . $donation['id'],
+        ];
+        
+        // Set expiry time (24 jam)
+        $expiryTime = new \DateTime();
+        $expiryTime->add(new \DateInterval('P1D'));
+        
+        $expiry = [
+            'start_time' => date('Y-m-d H:i:s O'),
+            'unit' => 'day',
+            'duration' => 1,
+        ];
+        
+        // Data transaksi Midtrans
+        $transactionData = [
+            'transaction_details' => $transactionDetails,
+            'item_details' => $itemDetails,
+            'customer_details' => $customerDetails,
+            'callbacks' => $callbackUrl,
+            'expiry' => $expiry,
+        ];
+        
+        try {
+            // Buat transaksi Snap
+            $snapToken = \Midtrans\Snap::getSnapToken($transactionData);
+            $snapUrl = \Midtrans\Snap::getSnapUrl($transactionData);
+            
+            // Update token dan URL di database
+            $this->db->query(
+                "UPDATE donations SET payment_url = ?, payment_expiry = ? WHERE id = ?",
+                [$snapUrl, $expiryTime->format('Y-m-d H:i:s'), $donation['id']]
+            );
+            
+            return [
+                'success' => true,
+                'token' => $snapToken,
+                'redirect_url' => $snapUrl,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+    
+    /**
+     * Handle notifikasi dari Midtrans
+     * 
+     * @param array $notificationData Data notifikasi dari Midtrans
+     * @return array Status pemrosesan notifikasi
+     */
+    public function handleNotification($notificationData) {
+        // Log notifikasi untuk keperluan debugging
+        $payload = json_encode($notificationData);
+        $orderId = $notificationData['order_id'] ?? null;
+        $transactionId = $notificationData['transaction_id'] ?? null;
+        $paymentType = $notificationData['payment_type'] ?? null;
+        $status = $notificationData['transaction_status'] ?? null;
+        
+        $this->db->query(
+            "INSERT INTO payment_logs (order_id, transaction_id, payment_type, payload, status) VALUES (?, ?, ?, ?, ?)",
+            [$orderId, $transactionId, $paymentType, $payload, $status]
+        );
+        
+        if (!$orderId) {
+            return [
+                'success' => false,
+                'message' => 'Order ID tidak ditemukan',
+            ];
+        }
+        
+        // Cari donasi berdasarkan order ID
+        $donation = $this->db->fetch(
+            "SELECT * FROM donations WHERE order_id = ?",
+            [$orderId]
+        );
+        
+        if (!$donation) {
+            return [
+                'success' => false,
+                'message' => 'Donasi tidak ditemukan',
+            ];
+        }
+        
+        // Update log dengan ID donasi
+        $this->db->query(
+            "UPDATE payment_logs SET donation_id = ? WHERE order_id = ? ORDER BY id DESC LIMIT 1",
+            [$donation['id'], $orderId]
+        );
+        
+        // Proses status transaksi
+        switch ($status) {
+            case 'capture':
+            case 'settlement':
+                // Donasi berhasil, update status
+                $this->db->query(
+                    "UPDATE donations SET 
+                    status = 'success', 
+                    transaction_id = ?, 
+                    payment_method = ?, 
+                    payment_channel = ?, 
+                    va_number = ?, 
+                    paid_at = NOW(), 
+                    settlement_time = ? 
+                    WHERE id = ?",
+                    [
+                        $transactionId,
+                        $paymentType,
+                        $notificationData['va_numbers'][0]['bank'] ?? $notificationData['payment_type'],
+                        $notificationData['va_numbers'][0]['va_number'] ?? null,
+                        date('Y-m-d H:i:s'),
+                        $donation['id'],
+                    ]
+                );
+                
+                // Update jumlah terkumpul pada kampanye
+                $this->db->query(
+                    "UPDATE campaigns SET 
+                    current_amount = current_amount + ? 
+                    WHERE id = ?",
+                    [$donation['amount'], $donation['campaign_id']]
+                );
+                
+                // Ambil data kampanye untuk notifikasi
+                $campaign = $this->db->fetch(
+                    "SELECT * FROM campaigns WHERE id = ?",
+                    [$donation['campaign_id']]
+                );
+                
+                // Kirim notifikasi email dan WhatsApp ke donatur
+                if ($campaign) {
+                    $notifHelper = new \App\Helpers\NotificationHelper();
+                    $notifHelper->sendEmailNotification($donation, $campaign);
+                    
+                    if (!empty($donation['phone'])) {
+                        $notifHelper->sendWhatsAppNotification($donation, $campaign);
+                    }
+                }
+                
+                return [
+                    'success' => true,
+                    'message' => 'Donasi berhasil',
+                ];
+                break;
+
+            case 'pending':
+                // Donasi masih pending, update info VA
+                $paymentChannel = null;
+                $vaNumber = null;
+                
+                if (isset($notificationData['va_numbers'])) {
+                    $paymentChannel = $notificationData['va_numbers'][0]['bank'] ?? null;
+                    $vaNumber = $notificationData['va_numbers'][0]['va_number'] ?? null;
+                } elseif (isset($notificationData['permata_va_number'])) {
+                    $paymentChannel = 'permata';
+                    $vaNumber = $notificationData['permata_va_number'];
+                }
+                
+                $this->db->query(
+                    "UPDATE donations SET 
+                    payment_method = ?, 
+                    payment_channel = ?, 
+                    va_number = ?, 
+                    transaction_id = ? 
+                    WHERE id = ?",
+                    [
+                        $paymentType,
+                        $paymentChannel,
+                        $vaNumber,
+                        $transactionId,
+                        $donation['id'],
+                    ]
+                );
+                
+                return [
+                    'success' => true,
+                    'message' => 'Status donasi diperbarui: pending',
+                ];
+                break;
+
+            case 'deny':
+            case 'cancel':
+            case 'failure':
+                // Donasi gagal atau dibatalkan
+                $status = ($status === 'cancel') ? 'canceled' : 'failed';
+                
+                $this->db->query(
+                    "UPDATE donations SET status = ? WHERE id = ?",
+                    [$status, $donation['id']]
+                );
+                
+                return [
+                    'success' => true,
+                    'message' => 'Status donasi diperbarui: ' . $status,
+                ];
+                break;
+
+            case 'expire':
+                // Donasi kedaluwarsa
+                $this->db->query(
+                    "UPDATE donations SET status = 'expired' WHERE id = ?",
+                    [$donation['id']]
+                );
+                
+                return [
+                    'success' => true,
+                    'message' => 'Status donasi diperbarui: expired',
+                ];
+                break;
+
+            case 'refund':
+                // Donasi dikembalikan
+                $this->db->query(
+                    "UPDATE donations SET status = 'refunded', refund_time = NOW() WHERE id = ?",
+                    [$donation['id']]
+                );
+                
+                // Kurangi jumlah terkumpul pada kampanye
+                $this->db->query(
+                    "UPDATE campaigns SET 
+                    current_amount = current_amount - ? 
+                    WHERE id = ?",
+                    [$donation['amount'], $donation['campaign_id']]
+                );
+                
+                return [
+                    'success' => true,
+                    'message' => 'Status donasi diperbarui: refunded',
+                ];
+                break;
+
+            default:
+                return [
+                    'success' => false,
+                    'message' => 'Status transaksi tidak dikenali: ' . $status,
+                ];
+        }
+    }
+    
+    /**
+     * Cek status transaksi di Midtrans
+     * 
+     * @param string $orderId Order ID transaksi
+     * @return array Status transaksi
+     */
+    public function checkTransaction($orderId) {
+        try {
+            $response = \Midtrans\Transaction::status($orderId);
+            
+            return [
+                'success' => true,
+                'data' => $response,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+    
+    /**
+     * Refund transaksi di Midtrans
+     * 
+     * @param array $donation Data donasi
+     * @param string $reason Alasan refund
+     * @return array Status refund
+     */
+    public function refundTransaction($donation, $reason = 'Refund requested by admin') {
+        try {
+            $params = [
+                'refund_key' => 'refund-' . time(),
+                'amount' => $donation['amount'],
+                'reason' => $reason,
+            ];
+            
+            $response = \Midtrans\Transaction::refund($donation['order_id'], $params);
+            
+            if ($response && isset($response->status_code) && $response->status_code == 200) {
+                // Update status donasi
+                $this->db->query(
+                    "UPDATE donations SET status = 'refunded', refund_time = NOW() WHERE id = ?",
+                    [$donation['id']]
+                );
+                
+                // Kurangi jumlah terkumpul pada kampanye
+                $this->db->query(
+                    "UPDATE campaigns SET 
+                    current_amount = current_amount - ? 
+                    WHERE id = ?",
+                    [$donation['amount'], $donation['campaign_id']]
+                );
+                
+                return [
+                    'success' => true,
+                    'message' => 'Refund berhasil',
+                    'data' => $response,
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Refund gagal',
+                    'data' => $response,
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+    
+    /**
+     * Batalkan transaksi di Midtrans
+     * 
+     * @param array $donation Data donasi
+     * @return array Status pembatalan
+     */
+    public function cancelTransaction($donation) {
+        try {
+            $response = \Midtrans\Transaction::cancel($donation['order_id']);
+            
+            if ($response && isset($response->status_code) && $response->status_code == 200) {
+                // Update status donasi
+                $this->db->query(
+                    "UPDATE donations SET status = 'canceled' WHERE id = ?",
+                    [$donation['id']]
+                );
+                
+                return [
+                    'success' => true,
+                    'message' => 'Pembatalan berhasil',
+                    'data' => $response,
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Pembatalan gagal',
+                    'data' => $response,
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 } 

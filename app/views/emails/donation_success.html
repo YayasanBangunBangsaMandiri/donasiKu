@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terima Kasih atas Donasi Anda</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #ffffff;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+        }
+        h1 {
+            color: #3498db;
+            margin-top: 0;
+        }
+        .details {
+            margin: 25px 0;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .details table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .details table td:first-child {
+            font-weight: bold;
+            width: 140px;
+        }
+        .details table tr:last-child td {
+            border-bottom: none;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .success-icon {
+            text-align: center;
+            font-size: 48px;
+            color: #2ecc71;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>{{app_name}}</h2>
+        </div>
+        
+        <div class="content">
+            <div class="success-icon">✓</div>
+            
+            <h1>Terima Kasih atas Donasi Anda!</h1>
+            
+            <p>Halo <strong>{{donation.name}}</strong>,</p>
+            
+            <p>Donasi Anda telah <strong>berhasil diproses</strong>. Terima kasih atas dukungan dan kepedulian Anda pada kampanye <strong>{{campaign.title}}</strong>.</p>
+            
+            <div class="details">
+                <table>
+                    <tr>
+                        <td>Kampanye</td>
+                        <td>{{campaign.title}}</td>
+                    </tr>
+                    <tr>
+                        <td>Tanggal</td>
+                        <td>{{date}}</td>
+                    </tr>
+                    <tr>
+                        <td>Jumlah Donasi</td>
+                        <td>{{amount}}</td>
+                    </tr>
+                    <tr>
+                        <td>Metode Pembayaran</td>
+                        <td>{{payment_method}}</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td><strong style="color: #2ecc71;">{{payment_status}}</strong></td>
+                    </tr>
+                </table>
+            </div>
+            
+            <p>Donasi Anda akan digunakan untuk membantu mereka yang membutuhkan melalui kampanye ini. Terima kasih telah menjadi bagian dari perubahan positif!</p>
+            
+            <p>Jika Anda memiliki pertanyaan, silakan balas email ini atau hubungi tim kami.</p>
+            
+            <p>Salam hangat,<br>
+            Tim {{app_name}}</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{app_name}} - Platform Donasi Online</p>
+            <p>Email ini dikirim secara otomatis, mohon jangan membalas ke alamat email ini.</p>
+        </div>
+    </div>
+</body>
+</html> 

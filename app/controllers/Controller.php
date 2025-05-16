@@ -204,7 +204,7 @@ class Controller {
      */
     protected function isAjax() {
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
     }
     
     /**
@@ -223,7 +223,7 @@ class Controller {
      * Dekripsi data
      * 
      * @param string $data Data terenkripsi
-     * @return string|false
+     * @return string
      */
     protected function decrypt($data) {
         $data = base64_decode($data);

@@ -39,11 +39,12 @@ define('UPLOAD_PATH', __DIR__ . '/../public/uploads/');
 
 // Konfigurasi donasi
 define('DEFAULT_DONATION_AMOUNTS', [
+    10000 => '10.000',
     50000 => '50.000',
     100000 => '100.000',
     500000 => '500.000',
     1000000 => '1.000.000'
 ]);
 define('ALLOW_CUSTOM_AMOUNT', true);
-define('MIN_DONATION_AMOUNT', 10000);
+define('MIN_DONATION_AMOUNT', 10000); // Sesuai standar minimum Midtrans
 define('MAX_DONATION_AMOUNT', 100000000); 

@@ -10,12 +10,6 @@ session_start();
 // Load autoloader dari Composer
 require_once __DIR__ . '/vendor/autoload.php';
 
-// Load konfigurasi
-require_once __DIR__ . '/config/config.php';
-
-// Load database connection
-require_once __DIR__ . '/config/database.php';
-
 // Parse URL
 $url = isset($_GET['url']) ? $_GET['url'] : '';
 $url = rtrim($url, '/');
@@ -24,7 +18,7 @@ $url = explode('/', $url);
 
 // Tentukan controller
 $controllerName = !empty($url[0]) ? ucfirst($url[0]) . 'Controller' : 'HomeController';
-$controllerFile = __DIR__ . '/app/controllers/' . $controllerName . '.php';
+$controllerFile = __DIR__ . '/app/Controllers/' . $controllerName . '.php';
 
 // Tentukan method
 $method = isset($url[1]) ? $url[1] : 'index';
@@ -35,7 +29,7 @@ $params = array_slice($url, 2);
 // Periksa apakah file controller ada
 if (!file_exists($controllerFile)) {
     $controllerName = 'ErrorController';
-    $controllerFile = __DIR__ . '/app/controllers/' . $controllerName . '.php';
+    $controllerFile = __DIR__ . '/app/Controllers/' . $controllerName . '.php';
     $method = 'notFound';
     $params = [];
 }
@@ -49,7 +43,7 @@ $controller = new $controllerNamespace();
 // Periksa apakah method ada
 if (!method_exists($controller, $method)) {
     $controllerName = 'ErrorController';
-    $controllerFile = __DIR__ . '/app/controllers/' . $controllerName . '.php';
+    $controllerFile = __DIR__ . '/app/Controllers/' . $controllerName . '.php';
     $method = 'notFound';
     $params = [];
     

@@ -1,0 +1,40 @@
+# Mengizinkan akses ke file statis
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Mengizinkan akses ke file CSS, JS, dan gambar
+    RewriteCond %{REQUEST_URI} !^/public/(css|js|img)/.*$
+    
+    # Mengizinkan akses ke file uploads dengan ekstensi yang diizinkan
+    RewriteCond %{REQUEST_URI} !^/public/uploads/.*\.(jpg|jpeg|png|gif|pdf)$
+    
+    # Blokir akses ke semua file PHP di direktori uploads
+    RewriteRule ^uploads/.*\.php$ - [F,L]
+</IfModule>
+
+# Mencegah tampilan direktori
+Options -Indexes
+
+# Mencegah akses ke file .htaccess
+<Files .htaccess>
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Mencegah akses ke file dengan ekstensi tertentu
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Mengatur header keamanan
+<IfModule mod_headers.c>
+    # Mencegah MIME sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Mengaktifkan perlindungan XSS di browser
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Mencegah clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule> 

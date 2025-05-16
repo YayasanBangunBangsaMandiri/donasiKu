@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'donatehub/donatehub',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'bb0876f4ba7c7486bfcb84d0bb493764b8a38032',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -29,9 +29,9 @@
             'dev_requirement' => false,
         ),
         'donatehub/donatehub' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'bb0876f4ba7c7486bfcb84d0bb493764b8a38032',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
