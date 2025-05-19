@@ -127,9 +127,9 @@
                                             <td><?= htmlspecialchars($campaign['organizer_name']); ?></td>
                                             <td>Rp <?= number_format($campaign['goal_amount'], 0, ',', '.'); ?></td>
                                             <td>
-                                                Rp <?= number_format($campaign['collected_amount'], 0, ',', '.'); ?>
+                                                Rp <?= number_format($campaign['current_amount'], 0, ',', '.'); ?>
                                                 <div class="progress progress-xs mt-1">
-                                                    <?php $percentage = min(100, round(($campaign['collected_amount'] / $campaign['goal_amount']) * 100)); ?>
+                                                    <?php $percentage = min(100, round(($campaign['current_amount'] / $campaign['goal_amount']) * 100)); ?>
                                                     <div class="progress-bar bg-success" style="width: <?= $percentage; ?>%"></div>
                                                 </div>
                                                 <small class="text-muted"><?= $percentage; ?>%</small>
@@ -171,8 +171,14 @@
                                                     <a href="<?= BASE_URL; ?>/admin/edit-campaign/<?= $campaign['id']; ?>" class="btn btn-sm btn-primary" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <button type="button" class="btn btn-sm btn-warning change-status" data-id="<?= $campaign['id']; ?>" data-status="<?= $campaign['status']; ?>" title="Ubah Status">
-                                                        <i class="fas fa-exchange-alt"></i>
+                                                    <button type="button" class="btn btn-sm btn-success change-campaign-status" data-id="<?= $campaign['id']; ?>" data-status="active" title="Aktifkan">
+                                                        <i class="fas fa-check-circle"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-warning change-campaign-status" data-id="<?= $campaign['id']; ?>" data-status="pending" title="Pending">
+                                                        <i class="fas fa-clock"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-secondary change-campaign-status" data-id="<?= $campaign['id']; ?>" data-status="inactive" title="Nonaktifkan">
+                                                        <i class="fas fa-ban"></i>
                                                     </button>
                                                     <button type="button" class="btn btn-sm btn-danger delete-campaign" data-id="<?= $campaign['id']; ?>" data-title="<?= htmlspecialchars($campaign['title']); ?>" title="Hapus">
                                                         <i class="fas fa-trash"></i>
@@ -279,7 +285,7 @@
         });
         
         // Change status button
-        $('.change-status').click(function() {
+        $('.change-campaign-status').click(function() {
             const id = $(this).data('id');
             const currentStatus = $(this).data('status');
             

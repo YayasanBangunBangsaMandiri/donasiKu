@@ -68,19 +68,19 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="app_name">Nama Aplikasi</label>
-                                            <input type="text" class="form-control" id="app_name" name="app_name" value="<?= APP_NAME; ?>" required>
+                                            <input type="text" class="form-control" id="app_name" name="app_name" value="<?= defined('APP_NAME') ? APP_NAME : 'DonateHub'; ?>" required>
                                         </div>
                                         <div class="form-group">
                                             <label for="app_description">Deskripsi Aplikasi</label>
-                                            <textarea class="form-control" id="app_description" name="app_description" rows="3"><?= APP_DESCRIPTION ?? ''; ?></textarea>
+                                            <textarea class="form-control" id="app_description" name="app_description" rows="3"><?= defined('APP_DESCRIPTION') ? APP_DESCRIPTION : ''; ?></textarea>
                                         </div>
                                         <div class="form-group">
                                             <label for="contact_email">Email Kontak</label>
-                                            <input type="email" class="form-control" id="contact_email" name="contact_email" value="<?= CONTACT_EMAIL ?? ''; ?>">
+                                            <input type="email" class="form-control" id="contact_email" name="contact_email" value="<?= defined('CONTACT_EMAIL') ? CONTACT_EMAIL : ''; ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="contact_phone">Telepon Kontak</label>
-                                            <input type="text" class="form-control" id="contact_phone" name="contact_phone" value="<?= CONTACT_PHONE ?? ''; ?>">
+                                            <input type="text" class="form-control" id="contact_phone" name="contact_phone" value="<?= defined('CONTACT_PHONE') ? CONTACT_PHONE : ''; ?>">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -131,22 +131,22 @@
                                 <input type="hidden" name="settings_type" value="payment">
                                 <div class="card card-outline card-info mb-4">
                                     <div class="card-header">
-                                        <h3 class="card-title">Pengaturan Midtrans</h3>
+                                        <h3 class="card-title">Pengaturan Doku</h3>
                                     </div>
                                     <div class="card-body">
                                         <div class="form-group">
-                                            <label for="midtrans_client_key">Client Key</label>
-                                            <input type="text" class="form-control" id="midtrans_client_key" name="midtrans_client_key" value="<?= MIDTRANS_CLIENT_KEY ?? ''; ?>">
+                                            <label for="doku_client_id">Client ID</label>
+                                            <input type="text" class="form-control" id="doku_client_id" name="doku_client_id" value="<?= defined('DOKU_CLIENT_ID') ? DOKU_CLIENT_ID : ''; ?>">
                                         </div>
                                         <div class="form-group">
-                                            <label for="midtrans_server_key">Server Key</label>
-                                            <input type="text" class="form-control" id="midtrans_server_key" name="midtrans_server_key" value="<?= MIDTRANS_SERVER_KEY ?? ''; ?>">
+                                            <label for="doku_secret_key">Secret Key</label>
+                                            <input type="text" class="form-control" id="doku_secret_key" name="doku_secret_key" value="<?= defined('DOKU_SECRET_KEY') ? DOKU_SECRET_KEY : ''; ?>">
                                         </div>
                                         <div class="form-group">
-                                            <label for="midtrans_environment">Environment</label>
-                                            <select class="form-control" id="midtrans_environment" name="midtrans_environment">
-                                                <option value="sandbox" <?= (MIDTRANS_ENVIRONMENT ?? 'sandbox') == 'sandbox' ? 'selected' : ''; ?>>Sandbox (Testing)</option>
-                                                <option value="production" <?= (MIDTRANS_ENVIRONMENT ?? '') == 'production' ? 'selected' : ''; ?>>Production</option>
+                                            <label for="doku_environment">Environment</label>
+                                            <select class="form-control" id="doku_environment" name="doku_environment">
+                                                <option value="sandbox" <?= (defined('DOKU_ENVIRONMENT') ? DOKU_ENVIRONMENT : 'sandbox') == 'sandbox' ? 'selected' : ''; ?>>Sandbox (Testing)</option>
+                                                <option value="production" <?= (defined('DOKU_ENVIRONMENT') ? DOKU_ENVIRONMENT : '') == 'production' ? 'selected' : ''; ?>>Production</option>
                                             </select>
                                         </div>
                                     </div>
@@ -161,7 +161,7 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <div class="custom-control custom-checkbox">
-                                                        <input type="checkbox" class="custom-control-input" id="payment_bank_transfer" name="payment_methods[]" value="bank_transfer" <?= in_array('bank_transfer', ENABLED_PAYMENT_METHODS ?? []) ? 'checked' : ''; ?>>
+                                                        <input type="checkbox" class="custom-control-input" id="payment_bank_transfer" name="payment_methods[]" value="bank_transfer" <?= defined('ENABLED_PAYMENT_METHODS') && in_array('bank_transfer', ENABLED_PAYMENT_METHODS) ? 'checked' : ''; ?>>
                                                         <label class="custom-control-label" for="payment_bank_transfer">Transfer Bank</label>
                                                     </div>
                                                 </div>
@@ -169,7 +169,7 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <div class="custom-control custom-checkbox">
-                                                        <input type="checkbox" class="custom-control-input" id="payment_credit_card" name="payment_methods[]" value="credit_card" <?= in_array('credit_card', ENABLED_PAYMENT_METHODS ?? []) ? 'checked' : ''; ?>>
+                                                        <input type="checkbox" class="custom-control-input" id="payment_credit_card" name="payment_methods[]" value="credit_card" <?= defined('ENABLED_PAYMENT_METHODS') && in_array('credit_card', ENABLED_PAYMENT_METHODS) ? 'checked' : ''; ?>>
                                                         <label class="custom-control-label" for="payment_credit_card">Kartu Kredit</label>
                                                     </div>
                                                 </div>
@@ -177,7 +177,7 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     <div class="custom-control custom-checkbox">
-                                                        <input type="checkbox" class="custom-control-input" id="payment_e_wallet" name="payment_methods[]" value="e_wallet" <?= in_array('e_wallet', ENABLED_PAYMENT_METHODS ?? []) ? 'checked' : ''; ?>>
+                                                        <input type="checkbox" class="custom-control-input" id="payment_e_wallet" name="payment_methods[]" value="e_wallet" <?= defined('ENABLED_PAYMENT_METHODS') && in_array('e_wallet', ENABLED_PAYMENT_METHODS) ? 'checked' : ''; ?>>
                                                         <label class="custom-control-label" for="payment_e_wallet">E-Wallet</label>
                                                     </div>
                                                 </div>
@@ -197,37 +197,37 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="mail_host">SMTP Host</label>
-                                            <input type="text" class="form-control" id="mail_host" name="mail_host" value="<?= MAIL_HOST ?? ''; ?>">
+                                            <input type="text" class="form-control" id="mail_host" name="mail_host" value="<?= defined('MAIL_HOST') ? MAIL_HOST : ''; ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="mail_port">SMTP Port</label>
-                                            <input type="text" class="form-control" id="mail_port" name="mail_port" value="<?= MAIL_PORT ?? ''; ?>">
+                                            <input type="text" class="form-control" id="mail_port" name="mail_port" value="<?= defined('MAIL_PORT') ? MAIL_PORT : ''; ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="mail_username">SMTP Username</label>
-                                            <input type="text" class="form-control" id="mail_username" name="mail_username" value="<?= MAIL_USERNAME ?? ''; ?>">
+                                            <input type="text" class="form-control" id="mail_username" name="mail_username" value="<?= defined('MAIL_USERNAME') ? MAIL_USERNAME : ''; ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="mail_password">SMTP Password</label>
-                                            <input type="password" class="form-control" id="mail_password" name="mail_password" value="<?= MAIL_PASSWORD ?? ''; ?>">
+                                            <input type="password" class="form-control" id="mail_password" name="mail_password" value="<?= defined('MAIL_PASSWORD') ? MAIL_PASSWORD : ''; ?>">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="mail_encryption">Enkripsi</label>
                                             <select class="form-control" id="mail_encryption" name="mail_encryption">
-                                                <option value="tls" <?= (MAIL_ENCRYPTION ?? '') == 'tls' ? 'selected' : ''; ?>>TLS</option>
-                                                <option value="ssl" <?= (MAIL_ENCRYPTION ?? '') == 'ssl' ? 'selected' : ''; ?>>SSL</option>
-                                                <option value="none" <?= (MAIL_ENCRYPTION ?? '') == 'none' ? 'selected' : ''; ?>>None</option>
+                                                <option value="tls" <?= defined('MAIL_ENCRYPTION') && MAIL_ENCRYPTION == 'tls' ? 'selected' : ''; ?>>TLS</option>
+                                                <option value="ssl" <?= defined('MAIL_ENCRYPTION') && MAIL_ENCRYPTION == 'ssl' ? 'selected' : ''; ?>>SSL</option>
+                                                <option value="none" <?= defined('MAIL_ENCRYPTION') && MAIL_ENCRYPTION == 'none' ? 'selected' : ''; ?>>None</option>
                                             </select>
                                         </div>
                                         <div class="form-group">
                                             <label for="mail_from_address">Alamat Pengirim</label>
-                                            <input type="email" class="form-control" id="mail_from_address" name="mail_from_address" value="<?= MAIL_FROM_ADDRESS ?? ''; ?>">
+                                            <input type="email" class="form-control" id="mail_from_address" name="mail_from_address" value="<?= defined('MAIL_FROM_ADDRESS') ? MAIL_FROM_ADDRESS : ''; ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="mail_from_name">Nama Pengirim</label>
-                                            <input type="text" class="form-control" id="mail_from_name" name="mail_from_name" value="<?= MAIL_FROM_NAME ?? ''; ?>">
+                                            <input type="text" class="form-control" id="mail_from_name" name="mail_from_name" value="<?= defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : ''; ?>">
                                         </div>
                                         <div class="form-group mt-4">
                                             <button type="button" class="btn btn-info" id="test_email">
@@ -252,22 +252,22 @@
                                         <div class="form-group">
                                             <label for="enable_recaptcha">Google reCAPTCHA</label>
                                             <div class="custom-control custom-switch">
-                                                <input type="checkbox" class="custom-control-input" id="enable_recaptcha" name="enable_recaptcha" value="1" <?= ENABLE_RECAPTCHA ?? false ? 'checked' : ''; ?>>
+                                                <input type="checkbox" class="custom-control-input" id="enable_recaptcha" name="enable_recaptcha" value="1" <?= defined('ENABLE_RECAPTCHA') && ENABLE_RECAPTCHA ? 'checked' : ''; ?>>
                                                 <label class="custom-control-label" for="enable_recaptcha">Aktifkan Google reCAPTCHA untuk form</label>
                                             </div>
                                         </div>
                                         <div class="form-group">
                                             <label for="recaptcha_site_key">reCAPTCHA Site Key</label>
-                                            <input type="text" class="form-control" id="recaptcha_site_key" name="recaptcha_site_key" value="<?= RECAPTCHA_SITE_KEY ?? ''; ?>">
+                                            <input type="text" class="form-control" id="recaptcha_site_key" name="recaptcha_site_key" value="<?= defined('RECAPTCHA_SITE_KEY') ? RECAPTCHA_SITE_KEY : ''; ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="recaptcha_secret_key">reCAPTCHA Secret Key</label>
-                                            <input type="text" class="form-control" id="recaptcha_secret_key" name="recaptcha_secret_key" value="<?= RECAPTCHA_SECRET_KEY ?? ''; ?>">
+                                            <input type="text" class="form-control" id="recaptcha_secret_key" name="recaptcha_secret_key" value="<?= defined('RECAPTCHA_SECRET_KEY') ? RECAPTCHA_SECRET_KEY : ''; ?>">
                                         </div>
                                         <div class="form-group">
                                             <label for="enable_2fa">Autentikasi Dua Faktor (2FA)</label>
                                             <div class="custom-control custom-switch">
-                                                <input type="checkbox" class="custom-control-input" id="enable_2fa" name="enable_2fa" value="1" <?= ENABLE_2FA ?? false ? 'checked' : ''; ?>>
+                                                <input type="checkbox" class="custom-control-input" id="enable_2fa" name="enable_2fa" value="1" <?= defined('ENABLE_2FA') && ENABLE_2FA ? 'checked' : ''; ?>>
                                                 <label class="custom-control-label" for="enable_2fa">Aktifkan 2FA untuk admin</label>
                                             </div>
                                         </div>

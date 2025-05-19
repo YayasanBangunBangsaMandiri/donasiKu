@@ -3,7 +3,7 @@ namespace App\Controllers;
 
 use App\Models\Donation;
 use App\Models\Campaign;
-use App\Helpers\MidtransHelper;
+use App\Helpers\DokuHelper;
 
 /**
  * Controller untuk donasi
@@ -11,13 +11,13 @@ use App\Helpers\MidtransHelper;
 class DonationController extends Controller {
     private $donationModel;
     private $campaignModel;
-    private $midtransHelper;
+    private $dokuHelper;
     
     public function __construct() {
         parent::__construct();
         $this->donationModel = new Donation();
         $this->campaignModel = new Campaign();
-        $this->midtransHelper = new MidtransHelper();
+        $this->dokuHelper = new DokuHelper();
     }
     
     /**
@@ -27,10 +27,16 @@ class DonationController extends Controller {
      * @return void
      */
     public function form($slug) {
+        if (empty($slug)) {
+            $this->redirect('campaign');
+            return;
+        }
+        
         // Mendapatkan data kampanye
         $campaign = $this->campaignModel->findBySlug($slug);
         
         if (!$campaign) {
+            $this->setFlash('error', 'Kampanye tidak ditemukan.');
             $this->redirect('campaign');
             return;
         }
@@ -158,18 +164,24 @@ class DonationController extends Controller {
         // Dapatkan data donasi lengkap
         $donation = $this->donationModel->find($donationId);
         
-        // Buat transaksi Midtrans
-        $transaction = $this->midtransHelper->createTransaction($donation, $campaign);
-        
-        if (!$transaction['success']) {
-            $this->setFlash('error', 'Gagal membuat transaksi pembayaran: ' . $transaction['message']);
+        try {
+            // Buat transaksi Doku
+            $transaction = $this->dokuHelper->createTransaction($donation, $campaign);
+            
+            if (!$transaction['success']) {
+                $this->setFlash('error', 'Gagal membuat transaksi pembayaran: ' . $transaction['message']);
+                $this->redirect('donation/form/' . $campaign['slug']);
+                return;
+            }
+            
+            // Redirect ke halaman pembayaran Doku
+            header('Location: ' . $transaction['redirect_url']);
+            exit;
+        } catch (\Exception $e) {
+            $this->setFlash('error', 'Gagal membuat transaksi pembayaran: ' . $e->getMessage());
             $this->redirect('donation/form/' . $campaign['slug']);
             return;
         }
-        
-        // Redirect ke halaman pembayaran Midtrans
-        header('Location: ' . $transaction['redirect_url']);
-        exit;
     }
     
     /**
@@ -178,8 +190,14 @@ class DonationController extends Controller {
      * @param int $id ID donasi
      * @return void
      */
-    public function finish($id) {
-        $donation = $this->donationModel->find($id);
+    public function finish($id = null) {
+        if ($id === null && isset($_GET['order_id'])) {
+            // Get order_id from Doku callback
+            $orderId = $_GET['order_id'];
+            $donation = $this->donationModel->findByOrderId($orderId);
+        } else {
+            $donation = $this->donationModel->find($id);
+        }
         
         if (!$donation) {
             $this->setFlash('error', 'Donasi tidak ditemukan.');
@@ -187,8 +205,8 @@ class DonationController extends Controller {
             return;
         }
         
-        // Periksa status transaksi di Midtrans
-        $transaction = $this->midtransHelper->checkTransaction($donation['order_id']);
+        // Periksa status transaksi di Doku
+        $transaction = $this->dokuHelper->checkTransaction($donation['order_id']);
         
         // Dapatkan data kampanye
         $campaign = $this->campaignModel->find($donation['campaign_id']);
@@ -255,24 +273,24 @@ class DonationController extends Controller {
     }
     
     /**
-     * Endpoint untuk notifikasi webhook dari Midtrans
+     * Endpoint untuk notifikasi webhook dari Doku
      * 
      * @return void
      */
     public function notification() {
-        // Ambil data notifikasi dari Midtrans
+        // Ambil data notifikasi dari Doku
         $notification = json_decode(file_get_contents('php://input'), true);
         
         // Log notifikasi untuk debugging
-        $logFile = BASEPATH . '/logs/midtrans_notification_' . date('Y-m-d') . '.log';
+        $logFile = BASEPATH . '/logs/doku_notification_' . date('Y-m-d') . '.log';
         file_put_contents($logFile, date('Y-m-d H:i:s') . ': ' . json_encode($notification) . "\n", FILE_APPEND);
         
         // Proses notifikasi
-        $result = $this->midtransHelper->handleNotification($notification);
+        $result = $this->dokuHelper->processNotification($notification);
         
-        // Kirim response ke Midtrans
+        // Kirim response ke Doku
         header('Content-Type: application/json');
-        echo json_encode(['status' => $result['success'] ? 'success' : 'error', 'message' => $result['message']]);
+        echo json_encode(['status' => 'success']);
         exit;
     }
     

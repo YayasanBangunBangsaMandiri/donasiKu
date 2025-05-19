@@ -13,11 +13,11 @@ define('BASE_URL', 'http://localhost/donasiKu');
 // Zona waktu
 date_default_timezone_set('Asia/Jakarta');
 
-// Konfigurasi Midtrans
-define('MIDTRANS_CLIENT_KEY', 'SB-Mid-client-xxxxxxxxxxxxxxxx');  // Ganti dengan client key Midtrans
-define('MIDTRANS_SERVER_KEY', 'SB-Mid-server-xxxxxxxxxxxxxxxx');  // Ganti dengan server key Midtrans
-define('MIDTRANS_ENVIRONMENT', 'sandbox');  // 'sandbox' atau 'production'
-define('MIDTRANS_MERCHANT_ID', 'G123456789');  // Ganti dengan Merchant ID Midtrans
+// Konfigurasi Doku
+define('DOKU_CLIENT_ID', 'xxxxxxxxxxxxxxxx');  // Ganti dengan client ID Doku
+define('DOKU_SECRET_KEY', 'xxxxxxxxxxxxxxxx');  // Ganti dengan secret key Doku
+define('DOKU_ENVIRONMENT', 'sandbox');  // 'sandbox' atau 'production'
+define('DOKU_MERCHANT_ID', 'xxxxxxxx');  // Ganti dengan Merchant ID Doku
 
 // Konfigurasi Email
 define('MAIL_HOST', 'smtp.gmail.com');

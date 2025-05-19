@@ -6,17 +6,27 @@
 // Konfigurasi dasar
 define('APP_NAME', 'DonateHub');
 define('APP_VERSION', '1.0.0');
+define('APP_DESCRIPTION', 'Platform Donasi Online');
+define('CONTACT_EMAIL', 'noreply@donatehub.com');
+define('CONTACT_PHONE', '+6281234567890');
 define('BASE_URL', 'http://localhost/donasiKu');
 define('BASEPATH', dirname(__DIR__));
+define('PUBLIC_PATH', BASEPATH . '/public');
+define('DEBUG_MODE', true); // Set to true to enable debug logging
+define('MAINTENANCE_MODE', false); // Set to true to enable maintenance mode
+define('ENABLED_PAYMENT_METHODS', ['bank_transfer', 'credit_card', 'e_wallet']); // Available payment methods
 
 // Zona waktu
 date_default_timezone_set('Asia/Jakarta');
 
-// Konfigurasi Midtrans
-define('MIDTRANS_CLIENT_KEY', 'SB-Mid-client-xxxxxxxxxxxxxxxx');  // Ganti dengan client key Midtrans
-define('MIDTRANS_SERVER_KEY', 'SB-Mid-server-xxxxxxxxxxxxxxxx');  // Ganti dengan server key Midtrans
-define('MIDTRANS_ENVIRONMENT', 'sandbox');  // 'sandbox' atau 'production'
-define('MIDTRANS_MERCHANT_ID', 'G123456789');  // Ganti dengan Merchant ID Midtrans
+// Konfigurasi Doku
+define('DOKU_CLIENT_ID', 'BRN-0289-1747666046225');  // Client ID Doku
+define('DOKU_SECRET_KEY', 'SK-gvaZhzhyTyu4MDaXK1Cu');  // Secret key Doku
+define('DOKU_ENVIRONMENT', 'sandbox');  // 'sandbox' atau 'production'
+define('DOKU_MERCHANT_ID', 'BRN-0289-1747666046225');  // Merchant ID Doku
+define('DOKU_PUBLIC_KEY', '-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhPFmu6gXnZ0T5Wo/FLewgHIizkvS/IxHWrvD1MZlaZ/EYdTo+FHf9QsNOleyRsq9kP6b+8bVDveWIZq5Zwy5N/5qUxwa3HGfkkKorH7aBpTQmOzYajOWQbMoisoo1ui5O9ju0Rg5no1zwtupJixZgp2B+iKFTswqh7bO2MzjGCnLP95vdIIYBetwR84JWHV3hsDznaeAXhPJQq8awb9JAMje2ZcXFz0ilJD9BqTMYb4Vj1qsPgQXeqQ6m7dtj5i6AqYACiKgWg/uSkzy5IO5nJjZs7BwlHKZZXqnxItJr9O/8DC+x+VOI1EOiYrBKQPeIJNbTPrVz5OEtJLHE3Ic9wIDAQAB
+-----END PUBLIC KEY-----');
 
 // Konfigurasi Email
 define('MAIL_HOST', 'smtp.gmail.com');

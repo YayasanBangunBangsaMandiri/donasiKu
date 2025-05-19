@@ -81,11 +81,11 @@
                                     <table class="table table-borderless">
                                         <tr>
                                             <th style="width: 140px">Nama Donatur</th>
-                                            <td><?= htmlspecialchars($donation['donor_name']); ?></td>
+                                            <td><?= htmlspecialchars($donation['name'] ?? ''); ?></td>
                                         </tr>
                                         <tr>
                                             <th>Email</th>
-                                            <td><?= htmlspecialchars($donation['donor_email']); ?></td>
+                                            <td><?= htmlspecialchars($donation['email'] ?? ''); ?></td>
                                         </tr>
                                         <?php if (!empty($donation['phone'])) : ?>
                                         <tr>
@@ -260,7 +260,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>Apakah Anda yakin akan mengkonfirmasi pembayaran donasi dari <strong><?= htmlspecialchars($donation['donor_name']); ?></strong> sebesar <strong>Rp <?= number_format($donation['amount'], 0, ',', '.'); ?></strong>?</p>
+                <p>Apakah Anda yakin akan mengkonfirmasi pembayaran donasi dari <strong><?= htmlspecialchars($donation['name'] ?? ''); ?></strong> sebesar <strong>Rp <?= number_format($donation['amount'], 0, ',', '.'); ?></strong>?</p>
             </div>
             <div class="modal-footer">
                 <form id="confirmPaymentForm" method="POST" action="<?= BASE_URL; ?>/admin/confirm-payment">
@@ -284,7 +284,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>Apakah Anda yakin akan menghapus data donasi dari <strong><?= htmlspecialchars($donation['donor_name']); ?></strong> sebesar <strong>Rp <?= number_format($donation['amount'], 0, ',', '.'); ?></strong>?</p>
+                <p>Apakah Anda yakin akan menghapus data donasi dari <strong><?= htmlspecialchars($donation['name'] ?? ''); ?></strong> sebesar <strong>Rp <?= number_format($donation['amount'], 0, ',', '.'); ?></strong>?</p>
                 <p class="text-danger"><strong>Perhatian:</strong> Tindakan ini tidak dapat dibatalkan.</p>
             </div>
             <div class="modal-footer">

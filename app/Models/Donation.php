@@ -246,40 +246,148 @@ class Donation extends Model {
     }
     
     /**
-     * Mendapatkan statistik donasi
+     * Mendapatkan statistik donasi untuk dashboard
      * 
      * @return array
      */
     public function getStats() {
-        // Total donasi berhasil
-        $totalSuccess = $this->db->fetchColumn(
+        // Total donasi berhasil (amount)
+        $totalAmount = $this->db->fetchColumn(
             "SELECT COALESCE(SUM(amount), 0) FROM {$this->table} WHERE status = 'success'"
         );
         
-        // Jumlah donasi berhasil
-        $countSuccess = $this->db->fetchColumn(
+        // Jumlah transaksi donasi berhasil
+        $totalDonations = $this->db->fetchColumn(
             "SELECT COUNT(*) FROM {$this->table} WHERE status = 'success'"
         );
         
         // Jumlah donatur unik
-        $uniqueDonors = $this->db->fetchColumn(
+        $totalDonors = $this->db->fetchColumn(
             "SELECT COUNT(DISTINCT email) FROM {$this->table} WHERE status = 'success'"
         );
         
+        // Rata-rata donasi
+        $avgDonation = $totalDonations > 0 ? $totalAmount / $totalDonations : 0;
+        
+        // Data bulan ini
+        $startOfMonth = date('Y-m-01');
+        $endOfMonth = date('Y-m-t');
+        
+        // Total donasi bulan ini
+        $thisMonthTotal = $this->db->fetchColumn(
+            "SELECT COALESCE(SUM(amount), 0) FROM {$this->table} 
+            WHERE status = 'success' AND DATE(created_at) BETWEEN ? AND ?",
+            [$startOfMonth, $endOfMonth]
+        );
+        
+        // Donatur baru bulan ini
+        $newDonors = $this->db->fetchColumn(
+            "SELECT COUNT(DISTINCT email) FROM {$this->table} 
+            WHERE status = 'success' AND DATE(created_at) BETWEEN ? AND ?",
+            [$startOfMonth, $endOfMonth]
+        );
+        
+        // Data bulan lalu untuk perbandingan
+        $startOfLastMonth = date('Y-m-01', strtotime('-1 month'));
+        $endOfLastMonth = date('Y-m-t', strtotime('-1 month'));
+        
+        // Total donasi bulan lalu
+        $lastMonthTotal = $this->db->fetchColumn(
+            "SELECT COALESCE(SUM(amount), 0) FROM {$this->table} 
+            WHERE status = 'success' AND DATE(created_at) BETWEEN ? AND ?",
+            [$startOfLastMonth, $endOfLastMonth]
+        );
+        
+        // Donatur bulan lalu
+        $lastMonthDonors = $this->db->fetchColumn(
+            "SELECT COUNT(DISTINCT email) FROM {$this->table} 
+            WHERE status = 'success' AND DATE(created_at) BETWEEN ? AND ?",
+            [$startOfLastMonth, $endOfLastMonth]
+        );
+        
+        // Rata-rata donasi bulan lalu
+        $lastMonthDonationCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} 
+            WHERE status = 'success' AND DATE(created_at) BETWEEN ? AND ?",
+            [$startOfLastMonth, $endOfLastMonth]
+        );
+        
+        $lastMonthAvg = $lastMonthDonationCount > 0 ? 
+            $lastMonthTotal / $lastMonthDonationCount : 0;
+        
+        // Persentase pertumbuhan
+        $growthPercentage = $lastMonthTotal > 0 ? 
+            (($thisMonthTotal - $lastMonthTotal) / $lastMonthTotal) * 100 : 0;
+        
+        $donorGrowth = $lastMonthDonors > 0 ? 
+            (($newDonors - $lastMonthDonors) / $lastMonthDonors) * 100 : 0;
+        
+        $avgGrowth = $lastMonthAvg > 0 ? 
+            (($avgDonation - $lastMonthAvg) / $lastMonthAvg) * 100 : 0;
+        
         // Donasi per metode pembayaran
-        $byPaymentMethod = $this->db->fetchAll(
-            "SELECT payment_method, COUNT(*) as count, SUM(amount) as total 
+        $paymentMethods = $this->db->fetchAll(
+            "SELECT 
+                payment_method, 
+                COUNT(*) as count, 
+                SUM(amount) as total,
+                COUNT(*) * 100.0 / (SELECT COUNT(*) FROM {$this->table} WHERE status = 'success') as percentage
             FROM {$this->table} 
             WHERE status = 'success' 
             GROUP BY payment_method"
         );
         
+        // Format payment methods for chart
+        $chartPaymentMethods = [];
+        $colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#5a5c69'];
+        
+        foreach ($paymentMethods as $index => $method) {
+            $chartPaymentMethods[] = [
+                'label' => $this->formatPaymentMethodName($method['payment_method']),
+                'count' => (int)$method['count'],
+                'total' => (float)$method['total'],
+                'percentage' => (float)$method['percentage'],
+                'color' => $colors[$index % count($colors)]
+            ];
+        }
+        
+        // Get monthly donation data for chart
+        $monthlyData = $this->getStatistics('monthly');
+        
         return [
-            'total_success' => $totalSuccess,
-            'count_success' => $countSuccess,
-            'unique_donors' => $uniqueDonors,
-            'by_payment_method' => $byPaymentMethod
+            'total_amount' => $totalAmount,
+            'total_donations' => $totalDonations,
+            'growth_percentage' => round($growthPercentage, 1),
+            'total_donors' => $totalDonors,
+            'new_donors' => $newDonors,
+            'donor_growth' => round($donorGrowth, 1),
+            'avg_donation' => $avgDonation,
+            'avg_growth' => round($avgGrowth, 1),
+            'payment_methods' => $chartPaymentMethods,
+            'chart_data' => $monthlyData,
+            'total_success' => $totalAmount,
+            'count_success' => $totalDonations,
+            'unique_donors' => $totalDonors,
+            'by_payment_method' => $paymentMethods
         ];
+    }
+    
+    /**
+     * Format payment method name for display
+     * 
+     * @param string $method
+     * @return string
+     */
+    private function formatPaymentMethodName($method) {
+        $methodNames = [
+            'bank_transfer' => 'Transfer Bank',
+            'credit_card' => 'Kartu Kredit',
+            'ewallet' => 'E-Wallet',
+            'qris' => 'QRIS',
+            'virtual_account' => 'Virtual Account',
+        ];
+        
+        return $methodNames[$method] ?? ucfirst($method);
     }
     
     /**
@@ -504,85 +612,59 @@ class Donation extends Model {
                 DATE_FORMAT(created_at, '{$dateFormat}') as period,
                 COUNT(*) as total_donations,
                 SUM(amount) as total_amount,
-                payment_method,
                 COUNT(DISTINCT email) as unique_donors
                 FROM {$this->table}
                 WHERE status = 'success'
                 AND DATE(created_at) BETWEEN ? AND ?
-                GROUP BY period, payment_method
+                GROUP BY period
                 ORDER BY period";
         
         $statistics = $this->db->fetchAll($sql, [$dateFrom, $dateTo]);
         
-        // Format untuk output
-        $result = [
-            'labels' => [],
-            'datasets' => [
-                'total_amount' => [],
-                'total_donations' => [],
-                'payment_methods' => []
-            ],
+        // Format untuk chart.js
+        $labels = [];
+        $amounts = [];
+        $counts = [];
+        $donors = [];
+        
+        foreach ($statistics as $stat) {
+            $formattedDate = $stat['period'];
+            $labels[] = $formattedDate;
+            $amounts[] = (float)$stat['total_amount'];
+            $counts[] = (int)$stat['total_donations'];
+            $donors[] = (int)$stat['unique_donors'];
+        }
+        
+        // Get payment method statistics
+        $paymentMethodSql = "SELECT 
+                payment_method,
+                COUNT(*) as total_donations,
+                SUM(amount) as total_amount
+                FROM {$this->table}
+                WHERE status = 'success'
+                AND DATE(created_at) BETWEEN ? AND ?
+                GROUP BY payment_method
+                ORDER BY total_amount DESC";
+                
+        $paymentStats = $this->db->fetchAll($paymentMethodSql, [$dateFrom, $dateTo]);
+        
+        // Calculate totals for summary
+        $totalAmount = array_sum($amounts);
+        $totalDonations = array_sum($counts);
+        $avgDonation = $totalDonations > 0 ? $totalAmount / $totalDonations : 0;
+        
+        return [
+            'labels' => $labels,
+            'amounts' => $amounts,
+            'counts' => $counts,
+            'donors' => $donors,
+            'payment_methods' => $paymentStats,
             'summary' => [
-                'total_amount' => 0,
-                'total_donations' => 0,
-                'unique_donors' => 0,
-                'avg_donation' => 0
+                'total_amount' => $totalAmount,
+                'total_donations' => $totalDonations,
+                'avg_donation' => $avgDonation
             ]
         ];
-        
-        // Reshape data for charts
-        foreach ($statistics as $stat) {
-            // Add period to labels if not already added
-            if (!in_array($stat['period'], $result['labels'])) {
-                $result['labels'][] = $stat['period'];
-                $result['datasets']['total_amount'][$stat['period']] = 0;
-                $result['datasets']['total_donations'][$stat['period']] = 0;
-            }
-            
-            // Update datasets
-            $result['datasets']['total_amount'][$stat['period']] += $stat['total_amount'];
-            $result['datasets']['total_donations'][$stat['period']] += $stat['total_donations'];
-            
-            // Update payment methods
-            if (!isset($result['datasets']['payment_methods'][$stat['payment_method']])) {
-                $result['datasets']['payment_methods'][$stat['payment_method']] = 0;
-            }
-            $result['datasets']['payment_methods'][$stat['payment_method']] += $stat['total_amount'];
-            
-            // Update summary
-            $result['summary']['total_amount'] += $stat['total_amount'];
-            $result['summary']['total_donations'] += $stat['total_donations'];
-            $result['summary']['unique_donors'] = max($result['summary']['unique_donors'], $stat['unique_donors']);
-        }
-        
-        // Calculate average donation
-        if ($result['summary']['total_donations'] > 0) {
-            $result['summary']['avg_donation'] = $result['summary']['total_amount'] / $result['summary']['total_donations'];
-        }
-        
-        // Format labels based on period
-        $formattedLabels = [];
-        foreach ($result['labels'] as $label) {
-            switch ($period) {
-                case 'daily':
-                    $date = \DateTime::createFromFormat('Y-m-d', $label);
-                    $formattedLabels[] = $date ? $date->format('d M') : $label;
-                    break;
-                case 'monthly':
-                    $date = \DateTime::createFromFormat('Y-m', $label);
-                    $formattedLabels[] = $date ? $date->format('M Y') : $label;
-                    break;
-                case 'yearly':
-                    $formattedLabels[] = $label;
-                    break;
-                default:
-                    $formattedLabels[] = $label;
-            }
-        }
-        
-        $result['formatted_labels'] = $formattedLabels;
-        
-        return $result;
     }
     
     /**
@@ -799,5 +881,44 @@ class Donation extends Model {
         $stmt = $this->db->query($sql, [$now]);
         
         return $stmt->rowCount();
+    }
+    
+    /**
+     * Mendapatkan donasi terbaru berdasarkan campaign ID
+     * 
+     * @param int $campaignId ID campaign
+     * @param int $limit Batasan jumlah data
+     * @return array
+     */
+    public function getRecentByCampaignId($campaignId, $limit = 5) {
+        return $this->db->fetchAll(
+            "SELECT d.*, d.name as donor_name, 
+            IF(d.is_anonymous = 1, 'Anonim', d.name) as display_name
+            FROM {$this->table} d
+            WHERE d.campaign_id = ? AND d.status = 'success'
+            ORDER BY d.created_at DESC
+            LIMIT ?",
+            [$campaignId, $limit]
+        );
+    }
+
+    /**
+     * Get all donations with campaign information for reports
+     * 
+     * @return array
+     */
+    public function getAllWithDetails() {
+        return $this->db->fetchAll(
+            "SELECT d.*, 
+                c.title as campaign_title, 
+                c.slug as campaign_slug,
+                cat.name as category_name,
+                u.name as creator_name
+            FROM {$this->table} d
+            LEFT JOIN campaigns c ON d.campaign_id = c.id
+            LEFT JOIN categories cat ON c.category_id = cat.id
+            LEFT JOIN users u ON c.user_id = u.id
+            ORDER BY d.created_at DESC"
+        );
     }
 } 

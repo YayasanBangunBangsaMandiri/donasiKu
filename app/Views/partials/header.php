@@ -3,29 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($title) ? $title : APP_NAME . ' - Platform Donasi Online' ?></title>
+    <title><?= isset($title) ? $title . ' - ' . APP_NAME : APP_NAME ?></title>
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Favicon -->
+    <!-- <link rel="icon" href="<?= BASE_URL ?>/public/img/favicon.ico" type="image/x-icon"> -->
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/style.css">
-    
-    <!-- Favicon -->
-    <link rel="icon" href="<?= BASE_URL ?>/public/img/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/styles.css">
 </head>
 <body>
     <!-- Header/Navbar -->
     <header class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
         <div class="container">
             <a class="navbar-brand" href="<?= BASE_URL ?>">
-                <img src="<?= BASE_URL ?>/public/img/logo.png" alt="<?= APP_NAME ?>" height="40">
+                <!-- <img src="<?= BASE_URL ?>/public/img/logo.png" alt="<?= APP_NAME ?>" height="40"> -->
+                <span class="fw-bold"><?= APP_NAME ?></span>
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">

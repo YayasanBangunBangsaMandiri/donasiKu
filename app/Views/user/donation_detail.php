@@ -126,7 +126,7 @@
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-4 fw-bold">Metode Pembayaran</div>
-                                    <div class="col-md-8"><?= $donation['payment_method'] ?? 'Midtrans' ?></div>
+                                    <div class="col-md-8"><?= $donation['payment_method'] ?? 'Doku' ?></div>
                                 </div>
                                 <?php if (!empty($donation['message'])): ?>
                                 <div class="row mb-3">

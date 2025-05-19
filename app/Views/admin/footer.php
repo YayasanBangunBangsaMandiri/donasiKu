@@ -1,6 +1,5 @@
-            </main>
         </div>
-    </div>
+    </main>
 
     <!-- Footer -->
     <footer class="footer mt-auto py-3 bg-light">
@@ -22,8 +21,13 @@
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     
-    <!-- Admin JS -->
-    <script src="<?= BASE_URL ?>/public/js/admin.js"></script>
+    <!-- Define BASE_URL for JavaScript -->
+    <script>
+        const BASE_URL = "<?= BASE_URL ?>";
+    </script>
+    
+    <!-- Main JS (includes Admin functionality) -->
+    <script src="<?= BASE_URL ?>/public/js/main.js"></script>
     
     <!-- Initialize DataTables -->
     <script>

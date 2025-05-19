@@ -283,14 +283,14 @@
                     <h5 class="card-title mb-0">Kampanye Teratas</h5>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($activeCampaigns['data'])): ?>
+                    <?php if (empty($activeCampaigns['list'])): ?>
                     <div class="text-center p-5">
                         <i class="fas fa-hand-holding-heart text-muted fa-3x mb-3"></i>
                         <h5>Belum ada kampanye</h5>
                         <p class="text-muted">Kampanye akan ditampilkan di sini saat dibuat</p>
                     </div>
                     <?php else: ?>
-                        <?php foreach ($activeCampaigns['data'] as $campaign): ?>
+                        <?php foreach ($activeCampaigns['list'] as $campaign): ?>
                             <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
                                 <img src="<?= BASE_URL ?>/public/uploads/<?= $campaign['featured_image'] ?>" 
                                     alt="<?= $campaign['title'] ?>" class="rounded" width="60" height="60" style="object-fit: cover;">

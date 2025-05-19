@@ -180,4 +180,72 @@ class User extends Model {
             "SELECT * FROM {$this->table} WHERE role IN ('admin', 'super_admin') ORDER BY name ASC"
         );
     }
+    
+    /**
+     * Get user statistics for admin dashboard
+     * 
+     * @return array
+     */
+    public function getStats() {
+        // Get total user count
+        $totalUsers = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table}"
+        );
+        
+        // Get user count by role
+        $usersByRole = $this->db->fetchAll(
+            "SELECT role, COUNT(*) as count FROM {$this->table} GROUP BY role ORDER BY count DESC"
+        );
+        
+        // Get active user count
+        $activeUsers = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} WHERE status = 'active'"
+        );
+        
+        // Get inactive user count
+        $inactiveUsers = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} WHERE status != 'active'"
+        );
+        
+        // Calculate monthly growth
+        $thisMonth = date('Y-m-01');
+        $lastMonth = date('Y-m-01', strtotime('-1 month'));
+        
+        $thisMonthCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} WHERE created_at >= ?",
+            [$thisMonth]
+        );
+        
+        $lastMonthCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} WHERE created_at >= ? AND created_at < ?",
+            [$lastMonth, $thisMonth]
+        );
+        
+        $growthPercentage = 0;
+        if ($lastMonthCount > 0) {
+            $growthPercentage = round((($thisMonthCount - $lastMonthCount) / $lastMonthCount) * 100);
+        }
+        
+        // Get top donors
+        $topDonors = $this->db->fetchAll(
+            "SELECT u.id, u.name, u.email, u.status,
+                (SELECT COUNT(*) FROM donations d WHERE d.email = u.email AND d.status = 'success') as donation_count,
+                (SELECT SUM(amount) FROM donations d WHERE d.email = u.email AND d.status = 'success') as donation_amount
+             FROM {$this->table} u
+             WHERE EXISTS (SELECT 1 FROM donations d WHERE d.email = u.email AND d.status = 'success')
+             ORDER BY donation_amount DESC
+             LIMIT 5"
+        );
+        
+        return [
+            'total_users' => (int)$totalUsers,
+            'users_by_role' => $usersByRole,
+            'active_users' => (int)$activeUsers,
+            'inactive_users' => (int)$inactiveUsers,
+            'this_month_count' => (int)$thisMonthCount,
+            'last_month_count' => (int)$lastMonthCount,
+            'growth_percentage' => $growthPercentage,
+            'top_donors' => $topDonors
+        ];
+    }
 } 

@@ -206,4 +206,133 @@ class Campaign extends Model {
         
         return $this->create($newCampaign);
     }
+    
+    /**
+     * Mendapatkan kampanye terkait berdasarkan kategori
+     * 
+     * @param int $campaignId ID kampanye saat ini (untuk dikecualikan)
+     * @param int $categoryId ID kategori untuk mencari kampanye terkait
+     * @param int $limit Jumlah kampanye yang diambil
+     * @return array
+     */
+    public function getRelatedCampaigns($campaignId, $categoryId, $limit = 3) {
+        return $this->db->fetchAll(
+            "SELECT c.*, cat.name as category_name 
+            FROM {$this->table} c
+            LEFT JOIN categories cat ON c.category_id = cat.id
+            WHERE c.id != ? AND c.category_id = ? AND c.status = 'active'
+            ORDER BY c.created_at DESC
+            LIMIT ?",
+            [$campaignId, $categoryId, $limit]
+        );
+    }
+    
+    /**
+     * Get campaign statistics for admin dashboard
+     * 
+     * @return array
+     */
+    public function getDashboardStats() {
+        // Get active campaign count
+        $activeCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} WHERE status = 'active'"
+        );
+        
+        // Get total campaign count
+        $totalCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table}"
+        );
+        
+        // Get total donations received
+        $totalDonations = $this->db->fetchColumn(
+            "SELECT SUM(current_amount) FROM {$this->table}"
+        );
+        
+        // Get top campaigns
+        $topCampaigns = $this->db->fetchAll(
+            "SELECT c.id, c.title, c.goal_amount, c.current_amount, c.slug,
+                (SELECT COUNT(*) FROM donations d WHERE d.campaign_id = c.id AND d.status = 'success') as donor_count
+             FROM {$this->table} c
+             WHERE c.status = 'active'
+             ORDER BY c.current_amount DESC
+             LIMIT 5"
+        );
+        
+        // Get campaigns by category
+        $campaignsByCategory = $this->db->fetchAll(
+            "SELECT cat.name, COUNT(c.id) as campaign_count
+             FROM {$this->table} c
+             LEFT JOIN categories cat ON c.category_id = cat.id
+             GROUP BY cat.name
+             ORDER BY campaign_count DESC"
+        );
+        
+        // Calculate monthly growth
+        $thisMonth = date('Y-m-01');
+        $lastMonth = date('Y-m-01', strtotime('-1 month'));
+        
+        $thisMonthCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} WHERE created_at >= ?",
+            [$thisMonth]
+        );
+        
+        $lastMonthCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM {$this->table} WHERE created_at >= ? AND created_at < ?",
+            [$lastMonth, $thisMonth]
+        );
+        
+        $growthPercentage = 0;
+        if ($lastMonthCount > 0) {
+            $growthPercentage = round((($thisMonthCount - $lastMonthCount) / $lastMonthCount) * 100);
+        }
+        
+        return [
+            'active_count' => (int)$activeCount,
+            'total_count' => (int)$totalCount,
+            'total_donations' => (float)$totalDonations,
+            'top_campaigns' => $topCampaigns,
+            'campaigns_by_category' => $campaignsByCategory,
+            'this_month_count' => (int)$thisMonthCount,
+            'last_month_count' => (int)$lastMonthCount,
+            'growth_percentage' => $growthPercentage
+        ];
+    }
+    
+    /**
+     * Get all campaigns with creator and category info for reports
+     * 
+     * @return array
+     */
+    public function getAllWithDetails() {
+        return $this->db->fetchAll(
+            "SELECT c.*, 
+                u.name as creator_name, 
+                cat.name as category_name,
+                (SELECT COUNT(*) FROM donations d WHERE d.campaign_id = c.id AND d.status = 'success') as donor_count
+             FROM {$this->table} c
+             LEFT JOIN users u ON c.user_id = u.id
+             LEFT JOIN categories cat ON c.category_id = cat.id
+             ORDER BY c.created_at DESC"
+        );
+    }
+    
+    /**
+     * Mendapatkan kampanye terkait berdasarkan kategori dan ID
+     * 
+     * @param int $campaignId ID kampanye yang sedang dibuka
+     * @param int $categoryId Kategori kampanye
+     * @param int $limit Jumlah data
+     * @return array
+     */
+    public function getRelatedCampaignsById($campaignId, $categoryId, $limit = 3) {
+        return $this->db->fetchAll(
+            "SELECT c.*, cat.name as category_name 
+            FROM {$this->table} c
+            LEFT JOIN categories cat ON c.category_id = cat.id
+            WHERE c.id != ? AND c.category_id = ? AND c.status = 'active'
+            ORDER BY c.created_at DESC
+            LIMIT ?",
+            [$campaignId, $categoryId, $limit]
+        );
+    }
 } 

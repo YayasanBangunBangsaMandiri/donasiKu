@@ -146,8 +146,8 @@
                                             <td><?= $donation['id']; ?></td>
                                             <td><?= date('d M Y H:i', strtotime($donation['created_at'])); ?></td>
                                             <td>
-                                                <?= htmlspecialchars($donation['donor_name']); ?><br>
-                                                <small class="text-muted"><?= htmlspecialchars($donation['donor_email']); ?></small>
+                                                <?= htmlspecialchars($donation['name'] ?? ''); ?><br>
+                                                <small class="text-muted"><?= htmlspecialchars($donation['email'] ?? ''); ?></small>
                                             </td>
                                             <td><?= htmlspecialchars($donation['campaign_title'] ?? 'N/A'); ?></td>
                                             <td><b>Rp <?= number_format($donation['amount'], 0, ',', '.'); ?></b></td>

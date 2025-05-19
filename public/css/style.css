@@ -12,6 +12,10 @@
     --danger: #dc3545;
     --light: #f8f9fa;
     --dark: #343a40;
+    /* Admin Variables */
+    --header-height: 60px;
+    --primary-color: var(--primary);
+    --dark-color: var(--dark);
 }
 
 body {
@@ -187,4 +191,195 @@ footer a:hover {
 /* Custom Badge */
 .badge.bg-primary {
     background-color: var(--primary) !important;
+}
+
+/* ---------------------------------------------- */
+/* ADMIN DASHBOARD STYLES                         */
+/* ---------------------------------------------- */
+
+/* Admin Layout Styles */
+body.admin {
+    background-color: #f8f9fa;
+    overflow-x: hidden;
+    padding-top: var(--header-height);
+    min-height: 100vh;
+}
+
+/* Header Navigation */
+.admin-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+    z-index: 1030;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+}
+
+.admin-header .navbar-brand {
+    font-weight: 600;
+    color: var(--primary);
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.admin-header .navbar-nav .nav-link {
+    font-weight: 500;
+    color: var(--dark);
+    padding: 1rem;
+    position: relative;
+}
+
+.admin-header .navbar-nav .nav-link:hover {
+    color: var(--primary);
+}
+
+.admin-header .navbar-nav .nav-link.active {
+    color: var(--primary);
+}
+
+.admin-header .navbar-nav .nav-link.active:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 3px;
+    background-color: var(--primary);
+}
+
+/* User Profile */
+.user-profile {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 1040;
+    margin-left: 15px;
+}
+
+.user-profile i {
+    font-size: 1.25rem;
+    color: var(--dark);
+}
+
+/* Main Content */
+.admin-content {
+    padding: 1.5rem;
+    min-height: calc(100vh - var(--header-height) - 60px); /* Accounting for footer */
+}
+
+/* Dashboard Cards */
+.dashboard-stats .card {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+}
+
+.dashboard-stats .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.card-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.card-subtitle {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Admin Tables */
+.table-container {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-content .table th {
+    font-weight: 600;
+    border-top: none;
+    padding: 1rem;
+}
+
+.admin-content .table td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+/* Form Containers */
+.form-container {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Fix for charts to prevent page growth */
+.admin-content canvas {
+    max-height: 350px;
+}
+
+/* Admin Footer */
+.admin-footer {
+    background-color: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 0;
+    text-align: center;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Responsive adjustments for admin */
+@media (max-width: 992px) {
+    .admin-header .navbar-collapse {
+        background-color: #fff;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        position: absolute;
+        top: 100%;
+        right: 1rem;
+        left: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .admin-content {
+        padding: 1rem;
+    }
+    
+    .dashboard-stats .card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Make sure forms and tables don't extend beyond viewport */
+.table-responsive {
+    overflow-x: auto;
+    max-width: 100%;
 } 

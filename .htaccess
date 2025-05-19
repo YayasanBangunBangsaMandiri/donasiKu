@@ -4,17 +4,12 @@ Options -Indexes
     RewriteEngine On
     RewriteBase /donasiKu/
     
-    # Enable debugging parameter
-    RewriteCond %{QUERY_STRING} debug=1
-    RewriteRule ^(.*)$ $1 [QSA,L]
-    
-    # Directly load PHP files if they exist
-    RewriteCond %{REQUEST_FILENAME} -f
+    # Allow direct access to actual files and directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
     
-    # If the requested resource doesn't exist, use index.php
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    # Route everything else to index.php
     RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 </IfModule>
 

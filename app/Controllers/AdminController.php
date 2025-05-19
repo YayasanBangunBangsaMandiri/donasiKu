@@ -45,8 +45,18 @@ class AdminController extends Controller {
             'DESC'
         );
         
-        // Kampanye aktif
-        $activeCampaigns = $this->db->fetchAll(
+        // Get active campaign count
+        $activeCampaignsCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM campaigns WHERE status = 'active'"
+        );
+        
+        // Get total campaign count
+        $totalCampaignsCount = $this->db->fetchColumn(
+            "SELECT COUNT(*) FROM campaigns"
+        );
+        
+        // Kampanye aktif (data untuk daftar)
+        $activeCampaignsList = $this->db->fetchAll(
             "SELECT * FROM campaigns WHERE status = 'active' ORDER BY created_at DESC LIMIT 5"
         );
         
@@ -54,7 +64,11 @@ class AdminController extends Controller {
             'title' => 'Dashboard Admin - ' . APP_NAME,
             'donationStats' => $donationStats,
             'recentDonations' => $recentDonations['data'],
-            'activeCampaigns' => $activeCampaigns
+            'activeCampaigns' => [
+                'list' => $activeCampaignsList,
+                'count' => (int)$activeCampaignsCount,
+                'total' => (int)$totalCampaignsCount
+            ]
         ]);
     }
     
@@ -98,6 +112,27 @@ class AdminController extends Controller {
         
         // Mendapatkan data kampanye
         $campaigns = $this->db->fetchAll($query, $params);
+        
+        // Calculate progress percentage for each campaign
+        foreach ($campaigns as &$campaign) {
+            // Make sure current_amount is set
+            if (!isset($campaign['current_amount'])) {
+                $campaign['current_amount'] = 0;
+            }
+            
+            // Ensure numeric value
+            $campaign['current_amount'] = (float)$campaign['current_amount'];
+            $campaign['goal_amount'] = (float)$campaign['goal_amount'];
+            
+            // Auto-update status to completed if goal is reached
+            if ($campaign['current_amount'] >= $campaign['goal_amount'] && $campaign['status'] === 'active') {
+                $this->db->query(
+                    "UPDATE campaigns SET status = 'completed' WHERE id = ?",
+                    [$campaign['id']]
+                );
+                $campaign['status'] = 'completed';
+            }
+        }
         
         $this->view('admin/campaigns', [
             'title' => 'Kelola Kampanye - ' . APP_NAME,
@@ -344,7 +379,7 @@ class AdminController extends Controller {
      */
     public function settings() {
         $this->view('admin/settings', [
-            'title' => 'Pengaturan - ' . APP_NAME
+            'title' => 'Pengaturan Aplikasi'
         ]);
     }
     
@@ -528,26 +563,27 @@ class AdminController extends Controller {
      * @return void
      */
     public function deleteDonation() {
-        // Validasi input
-        if (!isset($_POST['donation_id']) || empty($_POST['donation_id'])) {
+        // Get donation ID from POST
+        $donationId = isset($_POST['donation_id']) ? (int)$_POST['donation_id'] : null;
+        
+        if (!$donationId) {
             $this->setFlash('error', 'ID donasi tidak valid.');
             $this->redirect('admin/donations');
             return;
         }
         
-        $donationId = (int)$_POST['donation_id'];
+        // Check if donation exists
         $donation = $this->donationModel->find($donationId);
-        
         if (!$donation) {
             $this->setFlash('error', 'Donasi tidak ditemukan.');
             $this->redirect('admin/donations');
             return;
         }
         
-        // Hapus notifikasi terkait
+        // Delete related notifications
         $this->db->query("DELETE FROM notifications WHERE donation_id = ?", [$donationId]);
         
-        // Hapus donasi
+        // Delete donation
         $deleted = $this->donationModel->delete($donationId);
         
         if (!$deleted) {
@@ -556,7 +592,7 @@ class AdminController extends Controller {
             return;
         }
         
-        // Update jumlah dana terkumpul jika donasi sudah berhasil
+        // Update campaign funds if donation was successful
         if ($donation['status'] === 'success') {
             $this->campaignModel->updateAmount($donation['campaign_id'], -1 * $donation['amount']);
         }
@@ -661,49 +697,43 @@ class AdminController extends Controller {
      * 
      * @return void
      */
-    public function deleteCampaign() {
-        // Validasi input
-        if (!isset($_POST['campaign_id']) || empty($_POST['campaign_id'])) {
-            $this->setFlash('error', 'ID kampanye tidak valid.');
-            $this->redirect('admin/campaigns');
-            return;
+    public function delete_campaign($id = null) {
+        // Check admin permissions
+        $this->checkAdminAuthentication();
+        
+        // Get ID from POST if not provided as parameter
+        if ($id === null) {
+            if (isset($_POST['campaign_id'])) {
+                $id = (int)$_POST['campaign_id'];
+            } else {
+                $_SESSION['error'] = 'ID kampanye tidak valid';
+                header('Location: ' . BASE_URL . '/admin/campaigns');
+                exit;
+            }
         }
         
-        $campaignId = (int)$_POST['campaign_id'];
-        $campaign = $this->campaignModel->find($campaignId);
-        
-        if (!$campaign) {
-            $this->setFlash('error', 'Kampanye tidak ditemukan.');
-            $this->redirect('admin/campaigns');
-            return;
+        // Validate ID
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = 'ID kampanye tidak valid';
+            header('Location: ' . BASE_URL . '/admin/campaigns');
+            exit;
         }
         
-        // Hapus notifikasi terkait
-        $this->db->query("DELETE FROM notifications WHERE campaign_id = ?", [$campaignId]);
+        // Get campaign model
+        $campaignModel = new \App\Models\Campaign();
         
-        // Hapus donasi terkait
-        $this->db->query("DELETE FROM donations WHERE campaign_id = ?", [$campaignId]);
+        // Try to delete campaign
+        $result = $campaignModel->delete($id);
         
-        // Hapus gambar kampanye
-        if (!empty($campaign['featured_image']) && file_exists(UPLOAD_PATH . $campaign['featured_image'])) {
-            unlink(UPLOAD_PATH . $campaign['featured_image']);
+        if ($result) {
+            $_SESSION['success'] = 'Kampanye berhasil dihapus';
+        } else {
+            $_SESSION['error'] = 'Gagal menghapus kampanye';
         }
         
-        if (!empty($campaign['banner_image']) && file_exists(UPLOAD_PATH . $campaign['banner_image'])) {
-            unlink(UPLOAD_PATH . $campaign['banner_image']);
-        }
-        
-        // Hapus kampanye
-        $deleted = $this->campaignModel->delete($campaignId);
-        
-        if (!$deleted) {
-            $this->setFlash('error', 'Gagal menghapus kampanye.');
-            $this->redirect('admin/campaigns');
-            return;
-        }
-        
-        $this->setFlash('success', 'Kampanye berhasil dihapus.');
-        $this->redirect('admin/campaigns');
+        // Redirect back to campaigns page
+        header('Location: ' . BASE_URL . '/admin/campaigns');
+        exit;
     }
 
     /**
@@ -747,9 +777,9 @@ class AdminController extends Controller {
                 
             case 'payment':
                 // Proses pengaturan pembayaran
-                $this->updateConfigValue($configContent, 'MIDTRANS_CLIENT_KEY', $_POST['midtrans_client_key'] ?? '');
-                $this->updateConfigValue($configContent, 'MIDTRANS_SERVER_KEY', $_POST['midtrans_server_key'] ?? '');
-                $this->updateConfigValue($configContent, 'MIDTRANS_ENVIRONMENT', $_POST['midtrans_environment'] ?? 'sandbox');
+                $this->updateConfigValue($configContent, 'DOKU_CLIENT_ID', $_POST['doku_client_id'] ?? '');
+                $this->updateConfigValue($configContent, 'DOKU_SECRET_KEY', $_POST['doku_secret_key'] ?? '');
+                $this->updateConfigValue($configContent, 'DOKU_ENVIRONMENT', $_POST['doku_environment'] ?? 'sandbox');
                 
                 // Metode pembayaran yang diaktifkan
                 $enabledMethods = $_POST['payment_methods'] ?? [];
@@ -1009,32 +1039,6 @@ class AdminController extends Controller {
     }
 
     /**
-     * Mengupdate nilai dalam file konfigurasi
-     * 
-     * @param string &$content Konten file konfigurasi
-     * @param string $key Kunci konfigurasi
-     * @param string $value Nilai baru
-     * @return void
-     */
-    private function updateConfigValue(&$content, $key, $value) {
-        // Jika nilai berupa string, tambahkan tanda kutip
-        if (is_string($value) && !in_array($value, ['true', 'false', 'null']) && !preg_match('/^array\(/', $value)) {
-            $value = "'" . addslashes($value) . "'";
-        }
-        
-        // Cari definisi konstanta
-        $pattern = "/define\(['\"]" . $key . "['\"],\s*([^)]+)\);/";
-        
-        // Jika sudah ada, update nilai
-        if (preg_match($pattern, $content)) {
-            $content = preg_replace($pattern, "define('" . $key . "', " . $value . ");", $content);
-        } else {
-            // Jika belum ada, tambahkan di akhir file
-            $content = rtrim($content) . "\ndefine('" . $key . "', " . $value . ");\n";
-        }
-    }
-
-    /**
      * Download receipt (bukti donasi) untuk donasi tertentu
      * 
      * @param int $id ID donasi
@@ -1274,5 +1278,812 @@ class AdminController extends Controller {
         echo '</body>';
         echo '</html>';
         exit;
+    }
+
+    /**
+     * Check if user has admin privileges
+     */
+    private function checkAdminAuthentication() {
+        if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] !== 'admin' && $_SESSION['user']['role'] !== 'super_admin')) {
+            $_SESSION['error'] = 'Anda tidak memiliki akses untuk halaman ini.';
+            header('Location: ' . BASE_URL . '/auth/login');
+            exit;
+        }
+    }
+
+    /**
+     * Change campaign status
+     * 
+     * @param int|null $id Campaign ID (optional, can be from POST)
+     * @param string|null $status New status (optional, can be from POST)
+     * @return void
+     */
+    public function change_campaign_status($id = null, $status = null) {
+        // Check admin permissions
+        $this->checkAdminAuthentication();
+        
+        // Get ID and status from POST if not provided as parameters
+        if ($id === null || $status === null) {
+            if (isset($_POST['campaign_id'])) {
+                $id = (int)$_POST['campaign_id'];
+            }
+            if (isset($_POST['status'])) {
+                $status = $_POST['status'];
+            }
+        }
+        
+        // Validate ID and status
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = 'ID kampanye tidak valid';
+            header('Location: ' . BASE_URL . '/admin/campaigns');
+            exit;
+        }
+        
+        // Validate status
+        $allowedStatuses = ['active', 'pending', 'inactive', 'ended', 'rejected'];
+        if (!in_array($status, $allowedStatuses)) {
+            $_SESSION['error'] = 'Status tidak valid';
+            header('Location: ' . BASE_URL . '/admin/campaigns');
+            exit;
+        }
+        
+        // Get campaign model
+        $campaignModel = new \App\Models\Campaign();
+        
+        // Update status
+        $result = $campaignModel->updateStatus($id, $status);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Status kampanye berhasil diubah';
+        } else {
+            $_SESSION['error'] = 'Gagal mengubah status kampanye';
+        }
+        
+        // Redirect back to campaigns page
+        header('Location: ' . BASE_URL . '/admin/campaigns');
+        exit;
+    }
+
+    /**
+     * Delete donation
+     * 
+     * @param int|null $id Donation ID (optional, can be from POST)
+     * @return void
+     */
+    public function delete_donation($id = null) {
+        // Check admin permissions
+        $this->checkAdminAuthentication();
+        
+        // Get ID from POST if not provided as parameter
+        if ($id === null) {
+            if (isset($_POST['donation_id'])) {
+                $id = (int)$_POST['donation_id'];
+            } else {
+                $_SESSION['error'] = 'ID donasi tidak valid';
+                header('Location: ' . BASE_URL . '/admin/donations');
+                exit;
+            }
+        }
+        
+        // Validate ID
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = 'ID donasi tidak valid';
+            header('Location: ' . BASE_URL . '/admin/donations');
+            exit;
+        }
+        
+        // Get donation model
+        $donationModel = new \App\Models\Donation();
+        
+        // Try to delete donation
+        $result = $donationModel->delete($id);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Donasi berhasil dihapus';
+        } else {
+            $_SESSION['error'] = 'Gagal menghapus donasi';
+        }
+        
+        // Redirect back to donations page
+        header('Location: ' . BASE_URL . '/admin/donations');
+        exit;
+    }
+
+    /**
+     * Change donation status
+     * 
+     * @param int|null $id Donation ID (optional, can be from POST)
+     * @param string|null $status New status (optional, can be from POST)
+     * @return void
+     */
+    public function change_donation_status($id = null, $status = null) {
+        // Check admin permissions
+        $this->checkAdminAuthentication();
+        
+        // Get ID and status from POST if not provided as parameters
+        if ($id === null || $status === null) {
+            if (isset($_POST['donation_id'])) {
+                $id = (int)$_POST['donation_id'];
+            }
+            if (isset($_POST['status'])) {
+                $status = $_POST['status'];
+            }
+        }
+        
+        // Validate ID
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = 'ID donasi tidak valid';
+            header('Location: ' . BASE_URL . '/admin/donations');
+            exit;
+        }
+        
+        // Validate status
+        $allowedStatuses = ['pending', 'completed', 'cancelled', 'success', 'failed'];
+        if (!in_array($status, $allowedStatuses)) {
+            $_SESSION['error'] = 'Status tidak valid';
+            header('Location: ' . BASE_URL . '/admin/donations');
+            exit;
+        }
+        
+        // Get donation model
+        $donationModel = new \App\Models\Donation();
+        
+        // Update status
+        $result = $donationModel->updateStatus($id, $status);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Status donasi berhasil diubah';
+        } else {
+            $_SESSION['error'] = 'Gagal mengubah status donasi';
+        }
+        
+        // Redirect back to donations page
+        header('Location: ' . BASE_URL . '/admin/donations');
+        exit;
+    }
+
+    /**
+     * Handle URL route for delete_donation - this passes to our main method with proper parameter
+     * 
+     * @param int $id The donation ID
+     * @return void
+     */
+    public function deleteDonation_url($id) {
+        return $this->delete_donation($id);
+    }
+    
+    /**
+     * Handle URL route for delete_campaign - this passes to our main method with proper parameter
+     * 
+     * @param int $id The campaign ID
+     * @return void
+     */
+    public function deleteCampaign_url($id) {
+        return $this->delete_campaign($id);
+    }
+    
+    /**
+     * Admin profile page
+     * 
+     * @return void
+     */
+    public function profile() {
+        // Check admin authentication
+        $this->checkAdminAuthentication();
+        
+        // Get admin user data
+        $userId = $_SESSION['user']['id'];
+        $user = $this->userModel->find($userId);
+        
+        $this->view('admin/profile', [
+            'title' => 'Admin Profile',
+            'user' => $user
+        ]);
+    }
+    
+    /**
+     * Export donation reports
+     * 
+     * @param string $format Format of the report (excel, pdf)
+     * @return void
+     */
+    public function reports($type, $format = 'excel') {
+        // Check admin permissions
+        $this->checkAdminAuthentication();
+        
+        // Get format from query string if not provided
+        if (isset($_GET['type'])) {
+            $format = $_GET['type'];
+        }
+        
+        // Validate format
+        if (!in_array($format, ['excel', 'pdf'])) {
+            $format = 'excel';
+        }
+        
+        switch ($type) {
+            case 'donations':
+                $this->exportDonationsReport($format);
+                break;
+            case 'campaigns':
+                $this->exportCampaignsReport($format);
+                break;
+            case 'summary':
+                $this->exportSummaryReport();
+                break;
+            default:
+                $_SESSION['error'] = 'Jenis laporan tidak valid';
+                $this->redirect('admin/dashboard');
+                break;
+        }
+    }
+    
+    /**
+     * Export donations report
+     * 
+     * @param string $format Format of the report (excel, pdf)
+     * @return void
+     */
+    private function exportDonationsReport($format = 'excel') {
+        // Get all donations with campaign and donor info
+        $donations = $this->donationModel->getAllWithDetails();
+        
+        if ($format === 'pdf') {
+            $this->exportDonationsPdf($donations);
+        } else {
+            $this->exportDonationsExcel($donations);
+        }
+    }
+    
+    /**
+     * Export campaigns report
+     * 
+     * @param string $format Format of the report (excel, pdf)
+     * @return void
+     */
+    private function exportCampaignsReport($format = 'excel') {
+        // Get all campaigns with creator and category info
+        $campaigns = $this->campaignModel->getAllWithDetails();
+        
+        if ($format === 'pdf') {
+            $this->exportCampaignsPdf($campaigns);
+        } else {
+            $this->exportCampaignsExcel($campaigns);
+        }
+    }
+    
+    /**
+     * Export summary report with statistics
+     * 
+     * @return void
+     */
+    private function exportSummaryReport() {
+        // Get statistics
+        $donationStats = $this->donationModel->getStats();
+        $campaignStats = $this->campaignModel->getDashboardStats();
+        $userStats = $this->userModel->getStats();
+        
+        // Export summary as PDF
+        $this->exportSummaryPdf($donationStats, $campaignStats, $userStats);
+    }
+    
+    /**
+     * Export donations to Excel
+     * 
+     * @param array $donations Donation data
+     * @return void
+     */
+    private function exportDonationsExcel($donations) {
+        // Required libraries
+        require_once BASEPATH . '/vendor/autoload.php';
+        
+        // Create new Spreadsheet object
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Set document properties
+        $spreadsheet->getProperties()
+            ->setCreator(APP_NAME)
+            ->setLastModifiedBy(APP_NAME)
+            ->setTitle('Laporan Donasi')
+            ->setSubject('Laporan Donasi ' . date('d-m-Y'))
+            ->setDescription('Laporan donasi dari aplikasi ' . APP_NAME);
+        
+        // Add header row
+        $sheet->setCellValue('A1', 'ID');
+        $sheet->setCellValue('B1', 'Pendonasi');
+        $sheet->setCellValue('C1', 'Email');
+        $sheet->setCellValue('D1', 'Kampanye');
+        $sheet->setCellValue('E1', 'Jumlah');
+        $sheet->setCellValue('F1', 'Metode Pembayaran');
+        $sheet->setCellValue('G1', 'Status');
+        $sheet->setCellValue('H1', 'Tanggal');
+        
+        // Style the header row
+        $sheet->getStyle('A1:H1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:H1')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCCCCC');
+        
+        // Add data rows
+        $row = 2;
+        foreach ($donations as $donation) {
+            $sheet->setCellValue('A' . $row, $donation['id']);
+            $sheet->setCellValue('B' . $row, $donation['is_anonymous'] ? 'Anonim' : $donation['name']);
+            $sheet->setCellValue('C' . $row, $donation['is_anonymous'] ? '-' : $donation['email']);
+            $sheet->setCellValue('D' . $row, $donation['campaign_title']);
+            $sheet->setCellValue('E' . $row, $donation['amount']);
+            $sheet->setCellValue('F' . $row, $donation['payment_method']);
+            $sheet->setCellValue('G' . $row, $donation['status']);
+            $sheet->setCellValue('H' . $row, $donation['created_at']);
+            
+            $row++;
+        }
+        
+        // Auto size columns
+        foreach (range('A', 'H') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        
+        // Create writer
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        // Set headers for download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="Laporan_Donasi_' . date('Y-m-d') . '.xlsx"');
+        header('Cache-Control: max-age=0');
+        
+        // Save file to output
+        $writer->save('php://output');
+        exit;
+    }
+    
+    /**
+     * Export campaigns to Excel
+     * 
+     * @param array $campaigns Campaign data
+     * @return void
+     */
+    private function exportCampaignsExcel($campaigns) {
+        // Required libraries
+        require_once BASEPATH . '/vendor/autoload.php';
+        
+        // Create new Spreadsheet object
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Set document properties
+        $spreadsheet->getProperties()
+            ->setCreator(APP_NAME)
+            ->setLastModifiedBy(APP_NAME)
+            ->setTitle('Laporan Kampanye')
+            ->setSubject('Laporan Kampanye ' . date('d-m-Y'))
+            ->setDescription('Laporan kampanye dari aplikasi ' . APP_NAME);
+        
+        // Add header row
+        $sheet->setCellValue('A1', 'ID');
+        $sheet->setCellValue('B1', 'Judul');
+        $sheet->setCellValue('C1', 'Kategori');
+        $sheet->setCellValue('D1', 'Dibuat Oleh');
+        $sheet->setCellValue('E1', 'Target');
+        $sheet->setCellValue('F1', 'Terkumpul');
+        $sheet->setCellValue('G1', 'Progress');
+        $sheet->setCellValue('H1', 'Status');
+        $sheet->setCellValue('I1', 'Tanggal Dibuat');
+        
+        // Style the header row
+        $sheet->getStyle('A1:I1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:I1')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCCCCC');
+        
+        // Add data rows
+        $row = 2;
+        foreach ($campaigns as $campaign) {
+            $progress = $campaign['goal_amount'] > 0 ? 
+                        min(100, round(($campaign['current_amount'] / $campaign['goal_amount']) * 100)) : 0;
+                        
+            $sheet->setCellValue('A' . $row, $campaign['id']);
+            $sheet->setCellValue('B' . $row, $campaign['title']);
+            $sheet->setCellValue('C' . $row, $campaign['category_name']);
+            $sheet->setCellValue('D' . $row, $campaign['creator_name']);
+            $sheet->setCellValue('E' . $row, $campaign['goal_amount']);
+            $sheet->setCellValue('F' . $row, $campaign['current_amount']);
+            $sheet->setCellValue('G' . $row, $progress . '%');
+            $sheet->setCellValue('H' . $row, $campaign['status']);
+            $sheet->setCellValue('I' . $row, $campaign['created_at']);
+            
+            $row++;
+        }
+        
+        // Auto size columns
+        foreach (range('A', 'I') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        
+        // Create writer
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        // Set headers for download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="Laporan_Kampanye_' . date('Y-m-d') . '.xlsx"');
+        header('Cache-Control: max-age=0');
+        
+        // Save file to output
+        $writer->save('php://output');
+        exit;
+    }
+    
+    /**
+     * Export donations to PDF
+     * 
+     * @param array $donations Donation data
+     * @return void
+     */
+    private function exportDonationsPdf($donations) {
+        // Required libraries
+        require_once BASEPATH . '/vendor/autoload.php';
+        
+        // HTML content
+        $html = '
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; }
+                h1 { text-align: center; font-size: 18px; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th { background-color: #f2f2f2; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+            </style>
+        </head>
+        <body>
+            <h1>Laporan Donasi ' . APP_NAME . '</h1>
+            <p>Tanggal: ' . date('d-m-Y') . '</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Pendonasi</th>
+                        <th>Kampanye</th>
+                        <th>Jumlah</th>
+                        <th>Status</th>
+                        <th>Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>';
+        
+        foreach ($donations as $donation) {
+            $html .= '
+                <tr>
+                    <td>' . $donation['id'] . '</td>
+                    <td>' . ($donation['is_anonymous'] ? 'Anonim' : $donation['name']) . '</td>
+                    <td>' . $donation['campaign_title'] . '</td>
+                    <td class="text-right">Rp ' . number_format($donation['amount'], 0, ',', '.') . '</td>
+                    <td>' . $donation['status'] . '</td>
+                    <td>' . date('d-m-Y', strtotime($donation['created_at'])) . '</td>
+                </tr>';
+        }
+        
+        $html .= '
+                </tbody>
+            </table>
+        </body>
+        </html>';
+        
+        // Initialize dompdf
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isPhpEnabled', true);
+        
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        
+        // Output the PDF
+        $dompdf->stream('Laporan_Donasi_' . date('Y-m-d') . '.pdf', [
+            'Attachment' => true
+        ]);
+        exit;
+    }
+    
+    /**
+     * Export campaigns to PDF
+     * 
+     * @param array $campaigns Campaign data
+     * @return void
+     */
+    private function exportCampaignsPdf($campaigns) {
+        // Required libraries
+        require_once BASEPATH . '/vendor/autoload.php';
+        
+        // HTML content
+        $html = '
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; }
+                h1 { text-align: center; font-size: 18px; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th { background-color: #f2f2f2; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+            </style>
+        </head>
+        <body>
+            <h1>Laporan Kampanye ' . APP_NAME . '</h1>
+            <p>Tanggal: ' . date('d-m-Y') . '</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Judul</th>
+                        <th>Kategori</th>
+                        <th>Dibuat Oleh</th>
+                        <th>Target</th>
+                        <th>Terkumpul</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>';
+        
+        foreach ($campaigns as $campaign) {
+            $progress = $campaign['goal_amount'] > 0 ? 
+                      min(100, round(($campaign['current_amount'] / $campaign['goal_amount']) * 100)) : 0;
+                      
+            $html .= '
+                <tr>
+                    <td>' . $campaign['id'] . '</td>
+                    <td>' . $campaign['title'] . '</td>
+                    <td>' . $campaign['category_name'] . '</td>
+                    <td>' . $campaign['creator_name'] . '</td>
+                    <td class="text-right">Rp ' . number_format($campaign['goal_amount'], 0, ',', '.') . '</td>
+                    <td class="text-right">Rp ' . number_format($campaign['current_amount'], 0, ',', '.') . '</td>
+                    <td class="text-center">' . $progress . '%</td>
+                    <td>' . $campaign['status'] . '</td>
+                </tr>';
+        }
+        
+        $html .= '
+                </tbody>
+            </table>
+        </body>
+        </html>';
+        
+        // Initialize dompdf
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isPhpEnabled', true);
+        
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        
+        // Output the PDF
+        $dompdf->stream('Laporan_Kampanye_' . date('Y-m-d') . '.pdf', [
+            'Attachment' => true
+        ]);
+        exit;
+    }
+    
+    /**
+     * Export summary report as PDF
+     * 
+     * @param array $donationStats Donation statistics
+     * @param array $campaignStats Campaign statistics
+     * @param array $userStats User statistics
+     * @return void
+     */
+    private function exportSummaryPdf($donationStats, $campaignStats, $userStats) {
+        // Required libraries
+        require_once BASEPATH . '/vendor/autoload.php';
+        
+        // HTML content
+        $html = '
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; }
+                h1 { text-align: center; font-size: 18px; margin-bottom: 20px; }
+                h2 { font-size: 16px; margin-top: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th { background-color: #f2f2f2; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .stat-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+                .stat-title { font-weight: bold; }
+                .stat-value { font-size: 18px; margin: 5px 0; }
+                .stat-footer { font-size: 10px; color: #666; }
+                .row { display: flex; flex-wrap: wrap; margin: 0 -5px; }
+                .col { flex: 1; padding: 0 5px; }
+            </style>
+        </head>
+        <body>
+            <h1>Ringkasan Statistik ' . APP_NAME . '</h1>
+            <p>Tanggal: ' . date('d-m-Y') . '</p>
+            
+            <h2>Statistik Umum</h2>
+            <div class="row">
+                <div class="col">
+                    <div class="stat-card">
+                        <div class="stat-title">Total Donasi</div>
+                        <div class="stat-value">Rp ' . number_format($donationStats['total_amount'] ?? 0, 0, ',', '.') . '</div>
+                        <div class="stat-footer">' . number_format($donationStats['total_donations'] ?? 0, 0, ',', '.') . ' transaksi</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="stat-card">
+                        <div class="stat-title">Kampanye Aktif</div>
+                        <div class="stat-value">' . number_format($campaignStats['active_count'] ?? 0, 0, ',', '.') . '</div>
+                        <div class="stat-footer">Dari total ' . number_format($campaignStats['total_count'] ?? 0, 0, ',', '.') . ' kampanye</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="stat-card">
+                        <div class="stat-title">Total Donatur</div>
+                        <div class="stat-value">' . number_format($donationStats['total_donors'] ?? 0, 0, ',', '.') . '</div>
+                        <div class="stat-footer">' . number_format($donationStats['new_donors'] ?? 0, 0, ',', '.') . ' donatur baru bulan ini</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="stat-card">
+                        <div class="stat-title">Rata-Rata Donasi</div>
+                        <div class="stat-value">Rp ' . number_format($donationStats['avg_donation'] ?? 0, 0, ',', '.') . '</div>
+                        <div class="stat-footer">Per transaksi</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Statistik Donasi Bulanan</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Bulan</th>
+                        <th>Jumlah Donasi</th>
+                        <th>Total Transaksi</th>
+                        <th>Rata-Rata</th>
+                    </tr>
+                </thead>
+                <tbody>';
+                
+        // Add monthly data if available
+        if (!empty($donationStats['monthly_data'])) {
+            foreach ($donationStats['monthly_data'] as $month) {
+                $html .= '
+                    <tr>
+                        <td>' . $month['month'] . '</td>
+                        <td class="text-right">Rp ' . number_format($month['amount'], 0, ',', '.') . '</td>
+                        <td class="text-center">' . $month['count'] . '</td>
+                        <td class="text-right">Rp ' . number_format($month['average'], 0, ',', '.') . '</td>
+                    </tr>';
+            }
+        } else {
+            $html .= '
+                <tr>
+                    <td colspan="4" class="text-center">Belum ada data donasi bulanan</td>
+                </tr>';
+        }
+                
+        $html .= '
+                </tbody>
+            </table>
+            
+            <h2>Kampanye Teratas</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Judul Kampanye</th>
+                        <th>Target</th>
+                        <th>Terkumpul</th>
+                        <th>Progress</th>
+                        <th>Donatur</th>
+                    </tr>
+                </thead>
+                <tbody>';
+                
+        // Add top campaigns data if available
+        if (!empty($campaignStats['top_campaigns'])) {
+            foreach ($campaignStats['top_campaigns'] as $campaign) {
+                $progress = $campaign['goal_amount'] > 0 ? 
+                          min(100, round(($campaign['current_amount'] / $campaign['goal_amount']) * 100)) : 0;
+                          
+                $html .= '
+                    <tr>
+                        <td>' . $campaign['title'] . '</td>
+                        <td class="text-right">Rp ' . number_format($campaign['goal_amount'], 0, ',', '.') . '</td>
+                        <td class="text-right">Rp ' . number_format($campaign['current_amount'], 0, ',', '.') . '</td>
+                        <td class="text-center">' . $progress . '%</td>
+                        <td class="text-center">' . $campaign['donor_count'] . '</td>
+                    </tr>';
+            }
+        } else {
+            $html .= '
+                <tr>
+                    <td colspan="5" class="text-center">Belum ada data kampanye teratas</td>
+                </tr>';
+        }
+                
+        $html .= '
+                </tbody>
+            </table>
+        </body>
+        </html>';
+        
+        // Initialize dompdf
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isPhpEnabled', true);
+        
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        
+        // Output the PDF
+        $dompdf->stream('Ringkasan_Statistik_' . date('Y-m-d') . '.pdf', [
+            'Attachment' => true
+        ]);
+        exit;
+    }
+
+    /**
+     * Update admin profile
+     * 
+     * @return void
+     */
+    public function updateProfile() {
+        // Check admin authentication
+        $this->checkAdminAuthentication();
+        
+        $userId = $_SESSION['user']['id'];
+        
+        // Validate input
+        $errors = $this->validate($_POST, [
+            'name' => 'required|max:100',
+            'phone' => 'max:20',
+            'email' => 'required|email|max:100'
+        ]);
+        
+        if (!empty($errors)) {
+            $this->setFlash('errors', $errors);
+            $this->redirect('admin/profile');
+            return;
+        }
+        
+        // Upload profile picture if provided
+        $profilePicture = null;
+        if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+            $profilePicture = $this->uploadFile('profile_picture');
+        }
+        
+        // Update user data
+        $userData = [
+            'name' => $_POST['name'],
+            'email' => $_POST['email'],
+            'phone' => $_POST['phone'] ?? null,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+        
+        if ($profilePicture) {
+            $userData['profile_picture'] = $profilePicture;
+        }
+        
+        $this->userModel->update($userId, $userData);
+        
+        // Update session data
+        $_SESSION['user']['name'] = $_POST['name'];
+        $_SESSION['user']['email'] = $_POST['email'];
+        if ($profilePicture) {
+            $_SESSION['user']['profile_picture'] = $profilePicture;
+        }
+        
+        $this->setFlash('success', 'Profil berhasil diperbarui');
+        $this->redirect('admin/profile');
     }
 }

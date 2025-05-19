@@ -82,7 +82,7 @@
                             <img src="<?= BASE_URL ?>/public/uploads/<?= $campaign['featured_image'] ?>" class="card-img-top" alt="<?= $campaign['title'] ?>" style="height: 200px; object-fit: cover;">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="badge bg-primary"><?= $campaign['category_name'] ?></span>
+                                    <span class="badge bg-primary"><?= $campaign['category_name'] ?? 'Umum' ?></span>
                                     <small class="text-muted">
                                         <i class="far fa-clock me-1"></i>
                                         <?php
@@ -108,7 +108,12 @@
                                         <small class="text-muted">tercapai</small>
                                     </div>
                                 </div>
-                                <a href="<?= BASE_URL ?>/campaign/detail/<?= $campaign['slug'] ?>" class="btn btn-primary w-100">Donasi Sekarang</a>
+                                <div class="mt-auto">
+                                    <div class="d-grid gap-2">
+                                        <a href="<?= BASE_URL ?>/donate.php?campaign=<?= $campaign['slug'] ?>" class="btn btn-primary">Donasi Sekarang</a>
+                                        <a href="<?= BASE_URL ?>/campaign/detail/<?= $campaign['slug'] ?>" class="btn btn-outline-secondary">Detail Kampanye</a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
