@@ -8,11 +8,13 @@ Options -Indexes
     RewriteCond %{QUERY_STRING} debug=1
     RewriteRule ^(.*)$ $1 [QSA,L]
     
-    # Jika file atau direktori tidak ada, lanjutkan ke aturan berikutnya
+    # Directly load PHP files if they exist
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # If the requested resource doesn't exist, use index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    
-    # Rewrite semua permintaan ke index.php?url=requested_path
     RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 </IfModule>
 

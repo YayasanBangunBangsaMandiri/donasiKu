@@ -6,8 +6,8 @@
 // Konfigurasi dasar
 define('APP_NAME', 'DonateHub');
 define('APP_VERSION', '1.0.0');
-define('BASE_URL', 'http://localhost:8888/donasiKu');
-define('BASEPATH', __DIR__ . '/..');
+define('BASE_URL', 'http://localhost/donasiKu');
+define('BASEPATH', dirname(__DIR__));
 
 // Zona waktu
 date_default_timezone_set('Asia/Jakarta');

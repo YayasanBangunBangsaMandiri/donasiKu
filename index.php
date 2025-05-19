@@ -29,6 +29,9 @@ $controllerFile = __DIR__ . '/app/Controllers/' . $controllerName . '.php';
 // Tentukan method
 $method = isset($url[1]) ? $url[1] : 'index';
 
+// Jika method mengandung tanda '-', konversi ke underscore
+$method = str_replace('-', '_', $method);
+
 // Parameter
 $params = array_slice($url, 2);
 
@@ -56,11 +59,32 @@ if (!file_exists($controllerFile)) {
 // Buat namespace untuk controller
 $controllerNamespace = 'App\\Controllers\\' . $controllerName;
 
-// Inisialisasi controller
-$controller = new $controllerNamespace();
-
-// Periksa apakah method ada
-if (!method_exists($controller, $method)) {
+// Tambahkan error handling untuk class not found
+try {
+    // Periksa apakah class ada
+    if (!class_exists($controllerNamespace)) {
+        throw new Exception("Controller class not found: $controllerNamespace");
+    }
+    
+    // Inisialisasi controller
+    $controller = new $controllerNamespace();
+    
+    // Periksa apakah method ada
+    if (!method_exists($controller, $method)) {
+        $controllerName = 'ErrorController';
+        $controllerFile = __DIR__ . '/app/Controllers/' . $controllerName . '.php';
+        $method = 'notFound';
+        $params = [];
+        
+        // Inisialisasi controller error
+        $controllerNamespace = 'App\\Controllers\\' . $controllerName;
+        $controller = new $controllerNamespace();
+    }
+} catch (Throwable $e) {
+    // Log error
+    error_log("Routing error: " . $e->getMessage());
+    
+    // Route to error controller
     $controllerName = 'ErrorController';
     $controllerFile = __DIR__ . '/app/Controllers/' . $controllerName . '.php';
     $method = 'notFound';
